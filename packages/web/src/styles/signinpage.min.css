@@ -1,0 +1,92 @@
+.signin {
+  max-width: 1120px;
+  margin: 38px auto;
+  padding: 0 20px;
+}
+
+.signin h1 {
+  color: #24324a;
+  font-size: 36px;
+  margin-bottom: 18px;
+  font-weight: 800;
+}
+
+.card {
+  background: #ffffff;
+  border: 1px solid #e6e9ef;
+  border-radius: 10px;
+  box-shadow: 0 8px 22px rgba(35, 55, 80, 0.06);
+  padding: 22px;
+  max-width: 520px;
+}
+
+.field {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.field__label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #3b4a62;
+}
+
+.field input {
+  height: 38px;
+  border-radius: 6px;
+  border: 1px solid #d7dde6;
+  background: #fbfcfe;
+  padding: 8px 12px;
+  outline: none;
+  font-size: 15px;
+  color: #24324a;
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+
+.field input:focus {
+  border-color: #8bb6ff;
+  box-shadow: 0 0 0 3px rgba(50, 132, 255, 0.18);
+  background: #fff;
+}
+
+.actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.btn {
+  appearance: none;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  height: 34px;
+  padding: 0 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform .02s ease, box-shadow .15s ease, background-color .15s ease;
+}
+
+.btn:active { transform: translateY(1px); }
+
+.btn--primary {
+  background: #1f6feb;
+  color: #fff;
+  box-shadow: 0 6px 14px rgba(31, 111, 235, 0.25);
+}
+
+.btn--primary:hover { filter: brightness(1.05); }
+
+.btn--ghost {
+  background: #fff;
+  color: #334155;
+  border-color: #d7dde6;
+}
+
+.btn--ghost:hover { background: #f6f8fb; }
+
+/* Responsive */
+@media (max-width: 520px) {
+  .card { padding: 18px; }
+  .signin h1 { font-size: 30px; }
+}

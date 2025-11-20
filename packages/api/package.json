@@ -6,14 +6,24 @@
   "type": "module",
   "scripts": {
     "dev": "nodemon src/index.js",
-    "start": "node src/index.js"
+    "start": "node src/index.js",
+    "dev:debug": "nodemon --exec node --inspect=9229 src/index.js",
+    "debug:once": "node --inspect-brk src/index.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@google-cloud/vertexai": "^1.10.0",
+    "@google-cloud/vision": "^5.3.4",
+    "cookie-session": "^2.1.1",
     "cors": "^2.8.5",
-    "express": "^5.1.0"
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
+    "firebase-admin": "^13.6.0",
+    "googleapis": "^166.0.0",
+    "path": "^0.12.7",
+    "url": "^0.11.4"
   },
   "devDependencies": {
     "nodemon": "^3.1.10"

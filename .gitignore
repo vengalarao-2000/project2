@@ -4,6 +4,8 @@ packages/web/node_modules/
 
 # Builds / caches
 web/dist/
+packages/web/src/components/auth/firebase.js
+packages/web/src/components/auth/paws-and-pixels-5aa72-firebase-adminsdk-fbsvc-a54c0ee6ff.json
 api/build/
 dist/
 .cache/
@@ -20,3 +22,5 @@ yarn-error.log*
 pnpm-debug.log*
 .DS_Store
 Thumbs.db
+**/*firebase-adminsdk*.json
+keys/**
