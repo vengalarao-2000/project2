@@ -1,22 +1,19 @@
+import ProtectedImages from "./ProtectedImages";
+
 export default function RawImageSection({
     photos,
     selectedIds,
     onToggleOne,
     onToggleAll,
-    onProcess,
-    onAddMore,
 }) {
     const allSelected = selectedIds.size === photos.length && photos.length > 0;
 
     return (
         <section className="bg-white rounded shadow p-4">
             <div className="d-flex flex-wrap align-items-center justify-content-between mb-4">
-                <h2 className="fs-5 fs-md-4 fw-semibold text-dark mb-2 mb-lg-0">
-                    Photo Gallery
-                </h2>
-
+                {/* Only show Select All if there are photos */}
                 {photos.length > 0 && (
-                    <div className="d-flex gap-2">
+                    <div className="d-flex justify-content-end w-100">
                         <button
                             onClick={onToggleAll}
                             className="px-3 py-2 btn btn-light border text-sm fw-medium"
@@ -24,36 +21,23 @@ export default function RawImageSection({
                         >
                             {allSelected ? "Deselect All" : "Select All"}
                         </button>
-
-                        <button
-                            onClick={onProcess}
-                            disabled={selectedIds.size === 0}
-                            className={`px-3 py-2 btn text-sm fw-medium transition ${selectedIds.size === 0
-                                ? "btn-secondary disabled"
-                                : "btn-primary"
-                                }`}
-                            type="button"
-                        >
-                            Generate
-                        </button>
                     </div>
                 )}
             </div>
 
-            {photos.length === 0 ? (
-                <div className="d-flex justify-content-center align-items-center" style={{ height: "10rem" }}>
-                    <button
-                        onClick={onAddMore}
-                        className="px-4 py-2 btn btn-primary fw-medium"
-                        type="button"
-                    >
-                        + Add more from Google Photos
-                    </button>
-                </div>
-            ) : (
+            {photos.length > 0 ? (
                 <div className="row g-3">
                     {photos.map((p) => {
                         const isSelected = selectedIds.has(p.id);
+
+                        // 1. Determine the Image URL
+                        // Firestore might store it as 'base64' (local), 'thumbUrl' (google), or 'url'
+                        const imageUrl = p.base64 || p.thumbUrl || p.url || p.baseUrl;
+
+                        // 2. Determine the Source Type
+                        // Check explicit source field OR if the URL is a data URI
+                        const isLocal = (p.source === 'local') || (imageUrl && imageUrl.startsWith("data:"));
+
                         return (
                             <div className="col-12 col-sm-6 col-lg-4" key={p.id}>
                                 <div
@@ -74,21 +58,45 @@ export default function RawImageSection({
                                         style={{ zIndex: 10, height: 20, width: 20 }}
                                         onClick={(e) => e.stopPropagation()}
                                     />
-                                    <img
-                                        src={p.url}
-                                        alt={p.name}
-                                        className="w-100"
-                                        style={{
-                                            height: "13rem",
-                                            objectFit: "cover",
-                                            opacity: isSelected ? 0.85 : 1,
-                                            transition: "opacity 0.3s"
-                                        }}
-                                    />
+
+                                    {/* CONDITIONAL RENDERING */}
+                                    {isLocal ? (
+                                        // 1. Local File: Standard Image Tag (No Proxy)
+                                        <img
+                                            src={imageUrl}
+                                            alt={p.filename || p.name || "upload"}
+                                            className="w-100"
+                                            style={{
+                                                height: "13rem",
+                                                objectFit: "cover",
+                                                opacity: isSelected ? 0.85 : 1,
+                                                transition: "opacity 0.3s"
+                                            }}
+                                        />
+                                    ) : (
+                                        // 2. Google Photo: Use Proxy Component
+                                        <ProtectedImages
+                                            src={imageUrl}
+                                            alt={p.filename || p.name || "google photo"}
+                                            className="w-100"
+                                            style={{
+                                                height: "13rem",
+                                                objectFit: "cover",
+                                                opacity: isSelected ? 0.85 : 1,
+                                                transition: "opacity 0.3s"
+                                            }}
+                                        />
+                                    )}
                                 </div>
                             </div>
                         );
                     })}
+                </div>
+            ) : (
+                <div className="d-flex justify-content-center align-items-center text-muted" style={{ height: "10rem" }}>
+                    <p className="mb-0">
+                        No photos selected. Click <b>"Pick from Google Photos"</b> or <b>"Upload File"</b> above to start.
+                    </p>
                 </div>
             )}
         </section>

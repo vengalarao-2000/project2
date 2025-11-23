@@ -1,3 +1,32 @@
+// import React from "react";
+// import ReactDOM from "react-dom/client";
+// import { AuthProvider } from "./components/auth/AuthContext.jsx";
+// import { BrowserRouter, Routes, Route } from "react-router-dom";
+// import { NavBar } from "./components/NavBar.jsx";
+// import SignInApp from "./components/SignInApp.jsx";
+// import Connect from './components/Connect.jsx';
+// import 'bootstrap/dist/css/bootstrap.min.css';
+// import 'bootstrap/dist/js/bootstrap.bundle.min.js';
+// import Dashboard from "./components/Dashboard.jsx";
+
+
+
+// ReactDOM.createRoot(document.getElementById("root")).render(
+//   <React.StrictMode>
+//     <AuthProvider>
+//       <BrowserRouter>
+//         <NavBar />
+//         <Routes>
+//           <Route path="/" element={<SignInApp />} />
+//           <Route path="/signin" element={<SignInApp />} />
+//           <Route path='/connect' element={<Connect />} />
+//           <Route path="/dashboard" element={<Dashboard />} />
+//         </Routes>
+//       </BrowserRouter>
+//     </AuthProvider>
+//   </React.StrictMode>
+// );
+
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { AuthProvider } from "./components/auth/AuthContext.jsx";
@@ -5,11 +34,12 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { NavBar } from "./components/NavBar.jsx";
 import SignInApp from "./components/SignInApp.jsx";
 import Connect from './components/Connect.jsx';
+import Dashboard from "./components/Dashboard.jsx";
+import ProtectedRoute from "./components/auth/ProtectedRoute.jsx"; // <--- Import this
+
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap/dist/js/bootstrap.bundle.min.js';
-import Dashboard from "./components/Dashboard.jsx";
-
-
+import Renditions from "./components/Renditions.jsx";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
@@ -17,10 +47,33 @@ ReactDOM.createRoot(document.getElementById("root")).render(
       <BrowserRouter>
         <NavBar />
         <Routes>
+          {/* Public Routes */}
           <Route path="/" element={<SignInApp />} />
           <Route path="/signin" element={<SignInApp />} />
-          <Route path='/connect' element={<Connect />} />
-          <Route path="/dashboard" element={<Dashboard />} />
+
+          {/* Protected Routes */}
+          <Route
+            path='/connect'
+            element={
+              <ProtectedRoute>
+                <Connect />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route path="/review/:id" element={
+            <ProtectedRoute>
+              <Renditions />
+            </ProtectedRoute>
+          } />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

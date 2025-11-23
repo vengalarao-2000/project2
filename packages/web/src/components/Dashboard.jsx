@@ -1,227 +1,163 @@
-// import { useState } from "react";
-// // import HeaderBar from "./Dashboard/HeaderBar";
-// import RawImageSection from "./Dashboard/RawImageSection";
-// import ProcessedImageSection from "./Dashboard/ProcessedImageSection";
-
-// //Segregation of processed and unprocessed photos
-// function analyzePhoto(p) {
-//     const name = String(p.url || "").toLowerCase();
-
-//     //Sample analyses based on image name
-//     //Golden Retriever
-//     if (name.includes("golden_retriever"))
-//         return {
-//             ...p,
-//             caption: "A playful moment captured perfectly in sunlight.",
-//             labels: ["dog", "outdoor", "happy"],
-//             moods: ["joyful", "curious"],
-//         };
-
-//     //Cat Sleeping
-//     if (name.includes("cat_sleeping"))
-//         return {
-//             ...p,
-//             caption: "Serenity and warmth blend in this cozy frame.",
-//             labels: ["cat", "relaxed", "cozy"],
-//             moods: ["calm", "dreamy"],
-//         };
-
-//     //Rabbit
-//     if (name.includes("rabbit_grass"))
-//         return {
-//             ...p,
-//             caption: "An adorable face that says a thousand stories.",
-//             labels: ["rabbit", "grass", "gentle"],
-//             moods: ["energetic", "playful"],
-//         };
-
-//     //Puppy
-//     if (name.includes("puppy_smile"))
-//         return {
-//             ...p,
-//             caption: "Colors and curiosity come alive beautifully.",
-//             labels: ["dog", "puppy", "playful"],
-//             moods: ["soft", "friendly"],
-//         };
-
-//     //Parrot
-//     if (name.includes("parrot_blue"))
-//         return {
-//             ...p,
-//             caption: "Energy, joy, and innocence frozen in time.",
-//             labels: ["parrot", "bird", "colorful"],
-//             moods: ["joyful", "curious"],
-//         };
-
-//     //Default (fallback)
-//     return {
-//         ...p,
-//         caption: "A beautiful moment captured in natural light.",
-//         labels: ["photo"],
-//         moods: ["pleasant"],
-//     };
-// }
-
-// export default function Dashboard() {
-//     const initialPhotos = [
-//         { id: "1", url: "/images/golden_retriever.jpg", name: "Golden Retriever" },
-//         { id: "2", url: "/images/cat_sleeping.jpg", name: "Cat Sleeping" },
-//         { id: "3", url: "/images/rabbit_grass.jpg", name: "Rabbit" },
-//         { id: "4", url: "/images/puppy_smile.jpg", name: "Puppy" },
-//         { id: "5", url: "/images/parrot_blue.jpg", name: "Parrot" },
-//     ];
-
-//     //make raw mutable so we can remove processed images
-//     const [raw, setRaw] = useState(initialPhotos);
-//     const [selectedIds, setSelectedIds] = useState(new Set());
-//     const [processed, setProcessed] = useState([]);
-//     const [loading, setLoading] = useState(false);
-
-//     const toggleOne = (id) => {
-//         setSelectedIds((prev) => {
-//             const next = new Set(prev);
-//             next.has(id) ? next.delete(id) : next.add(id);
-//             return next;
-//         });
-//     };
-
-//     const toggleAll = () => {
-//         setSelectedIds((prev) =>
-//             prev.size === raw.length ? new Set() : new Set(raw.map((r) => r.id))
-//         );
-//     };
-
-//     const handleProcess = () => {
-//         if (selectedIds.size === 0) return;
-//         setLoading(true);
-
-//         setTimeout(() => {
-//             // compute before mutating raw
-//             const chosen = raw.filter((r) => selectedIds.has(r.id));
-//             const results = chosen.map(analyzePhoto);
-
-//             //append to bottom section
-//             setProcessed((prev) => {
-//                 const next = [...prev, ...results];
-//                 window.latestProcessed = next;
-//                 return next;
-//             });
-
-//             //remove processed from the top section
-//             setRaw((prev) => prev.filter((p) => !selectedIds.has(p.id)));
-
-//             // clear selection and loading state
-//             setSelectedIds(new Set());
-//             setLoading(false);
-//         }, 400);
-//     };
-
-//     return (
-//         <div className="min-vh-100 bg-light">
-//             {/* <HeaderBar /> */}
-//             <main className="container py-4">
-//                 <RawImageSection
-//                     photos={raw}
-//                     selectedIds={selectedIds}
-//                     onToggleOne={toggleOne}
-//                     onToggleAll={toggleAll}
-//                     onProcess={handleProcess}
-//                 />
-
-//                 {!loading && processed.length === 0 && (
-//                     <section className="card shadow-sm mt-3">
-//                         <div className="card-body text-center text-muted">
-//                             No generated captions yet — select photos above and click <b>Generate</b>.
-//                         </div>
-//                     </section>
-//                 )}
-
-//                 {loading && (
-//                     <div className="text-center text-muted mt-3">
-//                         <div className="spinner-border spinner-border-sm me-2" role="status" />
-//                         Generating captions…
-//                     </div>
-//                 )}
-
-//                 {!loading && processed.length > 0 && (
-//                     <ProcessedImageSection processed={processed} />
-//                 )}
-//             </main>
-//         </div>
-//     );
-// }
-
-
-// packages/web/src/components/Dashboard.jsx
-import { useEffect, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import RawImageSection from "./Dashboard/RawImageSection";
 import ProcessedImageSection from "./Dashboard/ProcessedImageSection";
-import { auth } from "./auth/firebase";
+import InProgressSection from "./Dashboard/InProgressSection";
 
-const API_BASE = "http://localhost:3000"; // your API origin
+import { useAuth } from "./auth/AuthContext";
+import { Toast } from "./Toast";
+import Syncing from "./Syncing";
+import { onSnapshot, collection, query, orderBy } from "firebase/firestore";
+import { db } from "./auth/firebase";
+import { exportProcessedCSV } from "../utils/exportCSV";
+
+const API_BASE = "http://localhost:3000";
 
 export default function Dashboard() {
-    // upper grid (raw Google Photos items), but shaped for your component
-    // each item keeps the original Google Photos fields in _gh
-    const [raw, setRaw] = useState([]);
-    const [selectedIds, setSelectedIds] = useState(new Set());
+    const { user } = useAuth();
+
+    // --- STATE ---
+    const [unprocessedItems, setUnprocessedItems] = useState([]);
+    const [inProgressItems, setInProgressItems] = useState([]);
     const [processed, setProcessed] = useState([]);
 
-    const [loadingPhotos, setLoadingPhotos] = useState(false);
-    const [loadingGenerate, setLoadingGenerate] = useState(false);
-    const [nextPageToken, setNextPageToken] = useState(null);
+    const [selectedIds, setSelectedIds] = useState(new Set());
+    const [toastMsg, setToastMsg] = useState(null);
+    const [picking, setPicking] = useState(false);
+
+    const [isAnalyzing, setIsAnalyzing] = useState(false);
+    const [loadingHistory, setLoadingHistory] = useState(true);
     const [error, setError] = useState("");
 
-    // --- Load first page on mount ---
+    const pollingRef = useRef(null);
+
+    // 1. Real-time Listener
     useEffect(() => {
-        loadPhotos();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+        if (!user) return;
+        const q = query(collection(db, `users/${user.uid}/session_items`), orderBy("createdAt", "desc"));
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const allItems = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            setUnprocessedItems(allItems.filter(i => i.status === 'picked'));
+            setInProgressItems(allItems.filter(i => i.status === 'analyzing' || i.status === 'ready_for_selection'));
+        });
+        return () => unsubscribe();
+    }, [user]);
 
-    async function loadPhotos(pageToken) {
+    // 2. Fetch History
+    useEffect(() => {
+        if (user) fetchProcessedHistory(user);
+    }, [user]);
+
+    async function fetchProcessedHistory(currentUser) {
         try {
-            setLoadingPhotos(true);
-            setError("");
-
-            const r = await fetch(`${API_BASE}/api/photos`, { credentials: "include" });
-
-            // Handle 401 (Not Logged In) AND 403 (Forbidden/Scope Issue)
-            if (r.status === 401 || r.status === 403) {
-                // Redirect user to restart the OAuth flow
-                window.location.href = `${API_BASE}/auth/google`;
-                return;
+            setLoadingHistory(true);
+            const idToken = await currentUser.getIdToken();
+            const res = await fetch(`${API_BASE}/api/processed`, {
+                headers: { Authorization: `Bearer ${idToken}` },
+            });
+            if (res.ok) {
+                const data = await res.json();
+                setProcessed(data.items || []);
             }
-
-            if (!r.ok) {
-                const msg = await r.text();
-                console.error("api/photos failed", r.status, msg);
-                setError("Failed to load photos.");
-                return;
-            }
-
-            const data = await r.json();
-
-
-            // adapt to your RawImageSection shape
-            const mapped = (data.items || []).map((it) => ({
-                id: it.id,
-                name: it.filename,
-                url: it.thumbUrl || `${it.baseUrl}=w512-h512`,
-                _gh: it, // keep the full google-photos item for processing
-            }));
-            setRaw((prev) => [...prev, ...mapped]);
-            setNextPageToken(data.nextPageToken || null);
         } catch (e) {
-            console.error(e);
-            setError("Failed to load photos.");
+            console.error("Failed to load history:", e);
         } finally {
-            setLoadingPhotos(false);
+            setLoadingHistory(false);
         }
     }
 
-    // --- Selection helpers for the upper grid ---
+    // 3. Actions
+    async function openPicker() {
+        try {
+            setError("");
+            setPicking(true);
+            const res = await fetch(`${API_BASE}/api/picker/create-session`, { credentials: "include" });
+            if (res.status === 401) { window.location.href = `${API_BASE}/auth/google`; return; }
+            const { pickerUri, sessionId } = await res.json();
+            const popup = window.open(pickerUri, '_blank', 'width=800,height=600');
+            if (!popup) { setError("Popup blocked!"); setPicking(false); return; }
+            pollForPhotos(sessionId, popup);
+        } catch (e) { console.error(e); setPicking(false); }
+    }
+
+    async function pollForPhotos(sessionId, popupWindow) {
+        if (pollingRef.current) clearInterval(pollingRef.current);
+        pollingRef.current = setInterval(async () => {
+            try {
+                const res = await fetch(`${API_BASE}/api/picker/poll-session?sessionId=${sessionId}`, { credentials: "include" });
+                const data = await res.json();
+                if (data.status === "complete") {
+                    clearInterval(pollingRef.current);
+                    if (popupWindow && !popupWindow.closed) popupWindow.close();
+                    setPicking(false);
+                    await saveToSession(data.items, 'google-picker');
+                }
+            } catch (e) { /* ... */ }
+        }, 2000);
+    }
+
+    const handleLocalUpload = async (event) => {
+        const files = Array.from(event.target.files);
+        if (!files.length) return;
+        const items = await Promise.all(files.map(async file => ({
+            source: 'local',
+            filename: file.name,
+            mimeType: file.type,
+            base64: await toBase64(file)
+        })));
+        await saveToSession(items, 'local');
+    };
+
+    async function saveToSession(items, source) {
+        const idToken = await user.getIdToken();
+        await fetch(`${API_BASE}/api/session/draft`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${idToken}` },
+            body: JSON.stringify({ items, source })
+        });
+    }
+
+    async function handleAnalyze() {
+        if (selectedIds.size === 0) return;
+        try {
+            setIsAnalyzing(true);
+            setError("");
+            const idToken = await user.getIdToken();
+            await fetch(`${API_BASE}/api/analyze`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json", Authorization: `Bearer ${idToken}` },
+                body: JSON.stringify({ itemIds: Array.from(selectedIds) }),
+                credentials: "include"
+            });
+            setSelectedIds(new Set());
+        } catch (e) {
+            setError("Failed to analyze photos.");
+        } finally {
+            setTimeout(() => setIsAnalyzing(false), 500);
+        }
+    }
+
+    async function handleFinalize(sessionId, selectedCrop) {
+        try {
+            const idToken = await user.getIdToken();
+            const res = await fetch(`${API_BASE}/api/finalize`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json", Authorization: `Bearer ${idToken}` },
+                body: JSON.stringify({ sessionId, selectedCrop }),
+            });
+
+            if (!res.ok) throw new Error("Failed");
+
+            fetchProcessedHistory(user);
+            setToastMsg("Saved to Generated Results!");
+            setTimeout(() => setToastMsg(null), 3000);
+        } catch (e) {
+            console.error("Finalize failed", e);
+            setError("Failed to save selection.");
+        }
+    }
+
     const toggleOne = (id) => {
-        setSelectedIds((prev) => {
+        setSelectedIds(prev => {
             const next = new Set(prev);
             next.has(id) ? next.delete(id) : next.add(id);
             return next;
@@ -229,139 +165,137 @@ export default function Dashboard() {
     };
 
     const toggleAll = () => {
-        setSelectedIds((prev) =>
-            prev.size === raw.length ? new Set() : new Set(raw.map((r) => r.id))
+        setSelectedIds(prev =>
+            prev.size === unprocessedItems.length ? new Set() : new Set(unprocessedItems.map(i => i.id))
         );
     };
 
-    // --- Generate: send only selected photos to backend ---
-    async function handleProcess() {
-        if (selectedIds.size === 0) return;
-
-        try {
-            setLoadingGenerate(true);
-            setError("");
-
-            // gather selected payload (only fields the API needs)
-            const selected = raw.filter((r) => selectedIds.has(r.id));
-            const payloadItems = selected.map((r) => {
-                const it = r._gh;
-                return {
-                    id: it.id,
-                    filename: it.filename,
-                    mimeType: it.mimeType,
-                    baseUrl: it.baseUrl,
-                    productUrl: it.productUrl,
-                    width: it.width,
-                    height: it.height,
-                    createTime: it.createTime,
-                };
-            });
-
-            // Firebase auth -> ID token for user identification (uid)
-            const idToken = await auth.currentUser?.getIdToken();
-            if (!idToken) {
-                setError("Please sign in first.");
-                return;
-            }
-
-            const resp = await fetch(`${API_BASE}/api/process`, {
-                method: "POST",
-                credentials: "include", // keep Google session
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${idToken}`,
-                },
-                body: JSON.stringify({ items: payloadItems }), // optionally add petName/prompt
-            });
-
-            if (!resp.ok) {
-                const msg = await resp.text();
-                throw new Error(`process ${resp.status} ${msg}`);
-            }
-            const data = await resp.json(); // { processed: [{id,url,caption,labels,moods}, ...] }
-
-            // add to bottom grid
-            setProcessed((prev) => {
-                const next = [...prev, ...(data.processed || [])];
-                window.latestProcessed = next; // for your CSV button
-                return next;
-            });
-
-            // remove processed from upper grid
-            const processedIds = new Set((data.processed || []).map((p) => p.id));
-            setRaw((prev) => prev.filter((p) => !processedIds.has(p.id)));
-
-            // clear selection
-            setSelectedIds(new Set());
-        } catch (e) {
-            console.error(e);
-            setError("Failed to generate captions/labels.");
-        } finally {
-            setLoadingGenerate(false);
-        }
-    }
+    if (isAnalyzing) return <Syncing />;
 
     return (
         <div className="min-vh-100 bg-light">
+            <Toast message={toastMsg} onClose={() => setToastMsg(null)} />
+
             <main className="container py-4">
-                {/* Top: Photos + actions */}
-                <div className="d-flex justify-content-between align-items-center mb-2">
-                    <h2 className="h5 mb-0">Photo Gallery</h2>
+                {/* HEADER */}
+                <div className="d-flex justify-content-between align-items-center mb-5 pb-3 border-bottom">
+                    <div>
+                        <h2 className="h3 fw-bold text-dark mb-1">Content Dashboard</h2>
+                        <p className="text-muted mb-0">Manage your photo pipeline: Upload &rarr; Review &rarr; Publish</p>
+                    </div>
+
                     <div className="d-flex gap-2">
-                        {nextPageToken && (
-                            <button
-                                className="btn btn-outline-secondary btn-sm"
-                                onClick={() => loadPhotos(nextPageToken)}
-                                disabled={loadingPhotos}
-                            >
-                                {loadingPhotos ? "Loading…" : "Load more"}
-                            </button>
-                        )}
-                        <button
-                            className="btn btn-primary btn-sm"
-                            onClick={handleProcess}
-                            disabled={selectedIds.size === 0 || loadingGenerate}
-                        >
-                            {loadingGenerate ? "Generating…" : "Generate"}
+                        <input type="file" id="local-upload" multiple className="d-none" onChange={handleLocalUpload} />
+                        <label htmlFor="local-upload" className="btn btn-outline-secondary d-flex align-items-center gap-2">
+                            <i className="bi bi-upload"></i> Upload File
+                        </label>
+
+                        <button className="btn btn-outline-primary d-flex align-items-center gap-2" onClick={openPicker} disabled={picking}>
+                            <i className="bi bi-google"></i> {picking ? "Waiting..." : "Pick from Google Photos"}
                         </button>
                     </div>
                 </div>
 
-                <RawImageSection
-                    photos={raw}
-                    selectedIds={selectedIds}
-                    onToggleOne={toggleOne}
-                    onToggleAll={toggleAll}
-                    onProcess={handleProcess} // (kept for compatibility; you also have the button above)
-                />
+                {error && <div className="alert alert-danger mb-4 shadow-sm">{error}</div>}
 
-                {/* Status / errors */}
-                {error && (
-                    <div className="alert alert-danger mt-3" role="alert">
-                        {error}
+                {/* --- SECTION 1: UNPROCESSED --- */}
+                <section className="mb-5">
+                    <div className="d-flex justify-content-between align-items-center mb-3">
+                        <h4 className="h5 text-secondary fw-bold mb-0">
+                            1. Unprocessed Items <span className="badge bg-secondary ms-2 rounded-pill">{unprocessedItems.length}</span>
+                        </h4>
+
+                        <button
+                            className="btn btn-primary px-4"
+                            onClick={handleAnalyze}
+                            disabled={selectedIds.size === 0}
+                        >
+                            Generate Analysis {selectedIds.size > 0 && `(${selectedIds.size})`}
+                        </button>
                     </div>
-                )}
 
-                {!loadingGenerate && processed.length === 0 && (
-                    <section className="card shadow-sm mt-3">
-                        <div className="card-body text-center text-muted">
-                            No generated captions yet — select photos above and click <b>Generate</b>.
+                    {unprocessedItems.length > 0 ? (
+                        <RawImageSection
+                            photos={unprocessedItems}
+                            selectedIds={selectedIds}
+                            onToggleOne={toggleOne}
+                            onToggleAll={toggleAll}
+                        />
+                    ) : (
+                        <EmptySection
+                            message="Your upload queue is empty. Add more photos using direct upload or google photos"
+                        />
+                    )}
+                </section>
+
+                {/* --- SECTION 2: IN PROGRESS --- */}
+                <section className="mb-5">
+                    <h4 className="h5 text-primary fw-bold mb-3 pb-2 border-bottom border-primary border-opacity-25">
+                        2. Review & Select Crop <span className="badge bg-primary ms-2 rounded-pill">{inProgressItems.length}</span>
+                    </h4>
+
+                    {inProgressItems.length > 0 ? (
+                        <InProgressSection
+                            items={inProgressItems}
+                            onFinalize={handleFinalize}
+                        />
+                    ) : (
+                        <EmptySection
+                            message="No items pending review. Select Unprocessed items above and click 'Generate Analysis'."
+                        />
+                    )}
+                </section>
+
+                {/* --- SECTION 3: GENERATED RESULTS --- */}
+                <section>
+                    {/* Header Row: Title Left, Button Right */}
+                    <div className="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
+                        <h4 className="h5 text-dark fw-bold mb-0">
+                            3. Generated Results <span className="badge bg-dark ms-2 rounded-pill">{processed.length}</span>
+                        </h4>
+
+                        {/* Only show export button if there are results */}
+                        {processed.length > 0 && (
+                            <button
+                                className="btn btn-primary btn-sm"
+                                onClick={() => exportProcessedCSV(processed)}
+                            >
+                                Export CSV
+                            </button>
+                        )}
+                    </div>
+
+                    {/* Content Area */}
+                    {loadingHistory ? (
+                        <div className="text-center text-muted py-5">
+                            <div className="spinner-border text-secondary mb-2" role="status"></div>
+                            <div>Loading history...</div>
                         </div>
-                    </section>
-                )}
-
-                {loadingGenerate && (
-                    <div className="text-center text-muted mt-3">
-                        <div className="spinner-border spinner-border-sm me-2" role="status" />
-                        Generating captions…
-                    </div>
-                )}
-
-                {!loadingGenerate && processed.length > 0 && (
-                    <ProcessedImageSection processed={processed} />
-                )}
+                    ) : processed.length > 0 ? (
+                        <ProcessedImageSection processed={processed} />
+                    ) : (
+                        <EmptySection
+                            message="No generated results yet. Complete the review step to see your final assets here."
+                        />
+                    )}
+                </section>
             </main>
         </div>
     );
 }
+
+// Helper for consistent empty state styling
+function EmptySection({ message }) {
+    return (
+        <div className="text-center py-5 bg-white rounded-3 shadow-sm border border-dashed border-secondary-subtle">
+            <p className="text-muted mb-0 small fw-medium px-3">{message}</p>
+        </div>
+    );
+}
+
+const toBase64 = file => new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = error => reject(error);
+});

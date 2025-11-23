@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { exportProcessedCSV } from "../../utils/exportCSV";
 
+//Section-3: All images (cropped) are stored permanently and can be accessed by a public URL.
+//here use <img> tag instead of ProtectedImage as we are retrieving the image using public URL on storage bucket in firestore.
 export default function ProcessedImageSection({ processed }) {
     const [selectedLabel, setSelectedLabel] = useState("All");
     const [selectedMood, setSelectedMood] = useState("All");
@@ -38,17 +39,6 @@ export default function ProcessedImageSection({ processed }) {
     return (
         <section className="card shadow-sm mt-3">
             <div className="card-body">
-                {/* Header row: title left, export right */}
-                <div className="d-flex justify-content-between align-items-center mb-3">
-                    <h2 className="h5 mb-0">Generated Results</h2>
-                    <button
-                        className="btn btn-primary btn-sm"
-                        onClick={() => exportProcessedCSV(processed)}
-                    >
-                        Export CSV
-                    </button>
-                </div>
-
                 {/* Filter row */}
                 <div className="d-flex flex-wrap align-items-center gap-2 mb-3">
                     <select
@@ -81,6 +71,7 @@ export default function ProcessedImageSection({ processed }) {
                         <span className="text-muted small ms-1">Filters applied: {filtersApplied}</span>
                     )}
                 </div>
+
                 {/* no records exist after filtering */}
                 {filtered.length === 0 && (
                     <p className="text-muted mb-2">No results match the selected filters.</p>
@@ -95,7 +86,9 @@ export default function ProcessedImageSection({ processed }) {
                                     alt=""
                                     className="w-100"
                                     style={{ height: 208, objectFit: "cover" }}
+                                    loading="lazy"
                                 />
+
                                 <div className="p-3">
                                     <p className="fw-semibold mb-1">{p.caption || "Caption not generated"}</p>
                                     <p className="text-muted mb-1">

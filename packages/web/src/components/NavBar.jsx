@@ -1,23 +1,30 @@
-
 import { useNavigate } from "react-router-dom";
-import { signOut } from "firebase/auth";
-import { auth } from "./auth/firebase";
 import { useAuth } from "./auth/AuthContext";
 
 export function NavBar() {
-    const { user } = useAuth();
+    // 1. Destructure 'logout' from the context
+    const { user, logout } = useAuth();
     const navigate = useNavigate();
+
+    // 2. Create a handler that calls the context logout
+    const handleLogout = async () => {
+        try {
+            await logout(); // This triggers the backend cleanup + Firebase sign out
+            navigate("/signin");
+        } catch (error) {
+            console.error("Failed to log out", error);
+        }
+    };
 
     return (
         <nav className="navbar navbar-expand-lg navbar-light bg-body sticky-top shadow-sm">
             <div className="container">
-                {/* Logo links to /home.html before login, to /connect after login */}
-                <a className="navbar-brand fw-bold" href={user ? "/connect" : "/home.html"}>
+                <a className="navbar-brand fw-bold" href={user ? "/dashboard" : "/home.html"}>
                     <img src="/assets/images/logo_pap.png" height="32" className="me-2" alt="Paws & Pixels" />
                     Paws & Pixels
                 </a>
 
-                {/* BEFORE SIGN-IN: show links to static HTML pages */}
+                {/* display home, about and contact only when user is NOT logged in */}
                 {!user && (
                     <>
                         <button className="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav">
@@ -34,29 +41,25 @@ export function NavBar() {
                     </>
                 )}
 
-                {/* AFTER SIGN-IN: hide static links, show profile menu only */}
                 {user && (
                     <div className="ms-auto">
                         <div className="dropdown">
                             <button className="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
-                                {/* <img
-                                    src={user.photoURL || "/assets/images/avatar_placeholder.png"}
-                                    width="24" height="24" className="rounded-circle me-2" alt=""
-                                /> */}
                                 <i
                                     className="bi bi-person-circle"
                                     style={{ fontSize: "1.5rem", color: "gray" }}
                                 ></i>
                             </button>
                             <ul className="dropdown-menu dropdown-menu-end">
-                                <li><center>{user.displayName || user.email}</center></li>
+                                <li><center className="dropdown-item-text text-muted small">{user.displayName || user.email}</center></li>
                                 <li><hr className="dropdown-divider" /></li>
                                 <li><a className="dropdown-item" href="/dashboard">Studio</a></li>
                                 <li><hr className="dropdown-divider" /></li>
                                 <li>
+                                    {/* 3. Update the button to use handleLogout */}
                                     <button
                                         className="dropdown-item text-danger"
-                                        onClick={() => signOut(auth).then(() => navigate("/signin"))}
+                                        onClick={handleLogout}
                                     >
                                         Log out
                                     </button>

@@ -1,0 +1,214 @@
+:root {
+    --bg: #f7f9fc;
+    --card: #ffffff;
+    --text: #0f172a;
+    /* slate-900 */
+    --muted: #475569;
+    /* slate-600 */
+    --ring: #e2e8f0;
+    /* slate-200 */
+    --primary: #2563eb;
+    /* blue-600 */
+    --primary-50: #eef2ff;
+    /* indigo-50 (for step) */
+    --primary-700: #4338ca;
+    --shadow: 0 8px 24px rgba(2, 8, 23, .08);
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+}
+
+.ap-page {
+    min-height: 100vh;
+    background: var(--bg);
+    color: var(--text);
+}
+
+.ap-header {
+    height: 64px;
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+    border-bottom: 1px solid var(--ring);
+    background: #fff;
+}
+
+.ap-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 700;
+}
+
+.ap-logo-mark {
+    width: 36px;
+    height: 36px;
+    display: grid;
+    place-items: center;
+    background: #f59e0b;
+    color: #111827;
+    border-radius: 10px;
+    font-size: 18px;
+    box-shadow: 0 4px 18px rgba(2, 8, 23, .06);
+}
+
+.ap-logo-text {
+    font-size: 18px;
+}
+
+.ap-main {
+    max-width: 760px;
+    margin: 60px auto 80px;
+    padding: 0 16px;
+    text-align: center;
+}
+
+.ap-hero {
+    margin-bottom: 24px;
+}
+
+.ap-sync-icon {
+    width: 64px;
+    height: 64px;
+    display: grid;
+    place-items: center;
+    margin: 0 auto 10px;
+    border-radius: 999px;
+    background: #e0e7ff;
+    /* indigo-100 */
+    color: #1d4ed8;
+    /* blue-700 */
+}
+
+.ap-title {
+    font-size: 40px;
+    line-height: 1.1;
+    margin: 8px 0 6px;
+    letter-spacing: -0.02em;
+}
+
+.ap-subtitle {
+    margin: 0;
+    color: var(--muted);
+    font-size: 16px;
+}
+
+.ap-card {
+    margin: 26px auto 18px;
+    background: var(--card);
+    border: 1px solid var(--ring);
+    border-radius: 14px;
+    box-shadow: var(--shadow);
+    padding: 18px;
+    max-width: 520px;
+    text-align: left;
+}
+
+.ap-card-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 14px;
+}
+
+.ap-badge {
+    width: 34px;
+    height: 34px;
+    display: grid;
+    place-items: center;
+    background: #e0e7ff;
+    color: #1d4ed8;
+    border-radius: 10px;
+    flex: 0 0 auto;
+}
+
+.ap-card-text {
+    font-weight: 600;
+}
+
+.ap-progress {
+    width: 100%;
+    height: 10px;
+    background: #e2e8f0;
+    border-radius: 999px;
+    overflow: hidden;
+}
+
+.ap-progress-bar {
+    height: 100%;
+    background: #3b82f6;
+    /* blue-500 */
+    border-radius: 999px 0 0 999px;
+}
+
+.ap-hint {
+    margin-top: 12px;
+    color: var(--muted);
+    font-size: 14px;
+}
+
+.ap-cta {
+    margin: 16px auto 28px;
+    display: block;
+    padding: 12px 20px;
+    border: none;
+    border-radius: 10px;
+    background: linear-gradient(180deg, #3b82f6, #2563eb);
+    color: #fff;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: var(--shadow);
+}
+
+.ap-cta:active {
+    transform: translateY(1px);
+}
+
+.ap-stepper {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    background: #fff;
+    border: 1px solid var(--ring);
+    box-shadow: var(--shadow);
+    padding: 8px;
+    border-radius: 999px;
+    width: max-content;
+    margin: 0 auto;
+}
+
+.ap-step {
+    padding: 10px 16px;
+    border-radius: 999px;
+    font-size: 14px;
+    color: #475569;
+    font-weight: 600;
+}
+
+.ap-step-active {
+    background: var(--primary-50);
+    color: var(--primary-700);
+}
+
+@media (min-width: 720px) {
+    .ap-title {
+        font-size: 44px;
+    }
+}
+
+.pf-logo-img {
+    width: 50px;
+    height: 63px;
+    border-radius: 10px;
+    /* matches your rounded-corner icon */
+    display: block;
+    box-shadow: 0 4px 18px rgba(2, 8, 23, .06);
+    object-fit: cover;
+    /* keeps it tidy if the file isn’t square */
+}

@@ -23,6 +23,7 @@
     "firebase-admin": "^13.6.0",
     "googleapis": "^166.0.0",
     "path": "^0.12.7",
+    "sharp": "^0.34.5",
     "url": "^0.11.4"
   },
   "devDependencies": {
