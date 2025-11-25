@@ -13,7 +13,8 @@ const app = express();
 
 // global middleware setup
 app.use(cors({ origin: env.FRONTEND_ORIGIN, credentials: true }));
-app.use(express.json());
+// Increase JSON body size limit to 50MB for base64-encoded images
+app.use(express.json({ limit: '50mb' }));
 app.set('trust proxy', 1);
 app.use(cookieSession({
     name: "sid",

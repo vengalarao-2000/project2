@@ -1,36 +1,40 @@
 import React from "react";
 import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 //provides icons
-import { ArrowRight, Upload, Image, Lock } from "lucide-react";
+import { ArrowRight, Upload, Lock } from "lucide-react";
 import "../styles/connect.min.css";
-
-const handleGoogleOAuth = () => {
-  window.location.href = "http://localhost:3000/auth/google";
-};
-
-const handleUpload = () => {
-  // Trigger file picker or route to upload page
-  console.log("Initiate file upload");
-};
-const sources = [
-  {
-    id: "google",
-    title: "Google Photos",
-    subtitle: "Access your photo library",
-    brandClass: "brand brand-google",
-    onClick: handleGoogleOAuth, // This starts OAuth
-  },
-  {
-    id: "upload",
-    title: "Upload Files",
-    subtitle: "Select photos from your device",
-    brandClass: "brand brand-upload",
-    icon: <Upload size={20} />,
-    onClick: handleUpload, // This starts direct upload
-  },
-];
+import { API_BASE } from "../config/api.js";
 
 const Connect = () => {
+  const navigate = useNavigate();
+
+  const handleGoogleOAuth = () => {
+    window.location.href = `${API_BASE}/auth/google`;
+  };
+
+  const handleUpload = () => {
+    // Navigate to dashboard where file upload functionality is available
+    navigate("/dashboard");
+  };
+
+  const sources = [
+    {
+      id: "google",
+      title: "Google Photos",
+      subtitle: "Access your photo library",
+      brandClass: "brand brand-google",
+      onClick: handleGoogleOAuth, // This starts OAuth
+    },
+    {
+      id: "upload",
+      title: "Upload Files",
+      subtitle: "Select photos from your device",
+      brandClass: "brand brand-upload",
+      icon: <Upload size={20} />,
+      onClick: handleUpload, // This starts direct upload
+    },
+  ];
   return (
     <div className="cp-page">
       {/* Main */}
