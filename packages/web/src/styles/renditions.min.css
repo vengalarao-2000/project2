@@ -1,0 +1,192 @@
+:root {
+    --bg: #f9fafb;
+    --text: #0f172a;
+    --muted: #475569;
+    --ring: #e2e8f0;
+    --primary: #2563eb;
+    --shadow: 0 4px 18px rgba(2, 8, 23, 0.06);
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: Inter, system-ui, sans-serif;
+}
+
+.rd-page {
+    min-height: 100vh;
+    background: var(--bg);
+    color: var(--text);
+}
+
+/* Header */
+.rd-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 28px;
+    border-bottom: 1px solid var(--ring);
+    background: #fff;
+}
+
+.rd-logo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 700;
+}
+
+.rd-logo-mark {
+    font-size: 22px;
+}
+
+.rd-logo-text {
+    font-size: 18px;
+}
+
+.rd-nav {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.rd-nav a {
+    text-decoration: none;
+    color: var(--text);
+    font-weight: 500;
+}
+
+.rd-signin {
+    padding: 6px 14px;
+    border-radius: 8px;
+    border: 1px solid var(--primary);
+    background: var(--primary);
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+/* Hero */
+.rd-main {
+    max-width: fit-content;
+    margin: 0 auto;
+    padding: 40px 16px;
+}
+
+.rd-hero {
+    text-align: center;
+    margin-bottom: 34px;
+}
+
+.rd-title {
+    font-size: 32px;
+    margin: 0 0 8px;
+}
+
+.rd-subtitle {
+    margin: 0;
+    color: var(--muted);
+    font-size: 16px;
+}
+
+/* Grid */
+.rd-renditions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 22px;
+    justify-content: center;
+}
+
+/* Card */
+.rd-card {
+    background: #fff;
+    border: 1px solid var(--ring);
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    transition: transform .15s ease, box-shadow .15s ease;
+}
+
+.rd-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 26px rgba(2, 8, 23, .08);
+}
+
+/* Make the media area follow the image aspect ratio dynamically via CSS var */
+.rd-media {
+    width: 100%;
+    aspect-ratio: var(--aspect, 1 / 1);
+    overflow: hidden;
+}
+
+.rd-media img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.rd-caption {
+    padding: 10px 12px 0 12px;
+    text-align: center;
+    font-size: 14px;
+    color: var(--muted);
+    font-weight: 600;
+}
+
+/* Actions */
+.rd-actions {
+    display: flex;
+    gap: 10px;
+    padding: 12px;
+    justify-content: center;
+}
+
+.rd-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    border: 1px solid var(--ring);
+    background: #fff;
+    color: var(--text);
+    padding: 8px 12px;
+    border-radius: 10px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.rd-btn:hover {
+    box-shadow: var(--shadow);
+}
+
+.rd-btn-primary {
+    background: linear-gradient(180deg, #3b82f6, #2563eb);
+    color: #fff;
+    border-color: #2563eb;
+}
+
+/* Responsive */
+@media (max-width: 700px) {
+    .rd-renditions {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .rd-card {
+        width: min(92vw, 420px) !important;
+    }
+}
+
+.pf-logo-img {
+    width: 50px;
+    height: 63px;
+    border-radius: 10px;
+    /* matches your rounded-corner icon */
+    display: block;
+    box-shadow: 0 4px 18px rgba(2, 8, 23, .06);
+    object-fit: cover;
+    /* keeps it tidy if the file isn’t square */
+}
