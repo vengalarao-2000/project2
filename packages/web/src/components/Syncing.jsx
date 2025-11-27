@@ -15,7 +15,7 @@ const Syncing = () => {
         });
     }, [rotateCtrl]);
 
-    // Demo progress (optional). Remove this effect if you control progress externally.
+    // Remove this effect if you control progress externally.
     useEffect(() => {
         const id = setInterval(() => {
             setProgress((p) => (p < 78 ? p + 1 : p)); // creep up then stop

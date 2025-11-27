@@ -1,4 +1,3 @@
-// src/services/imageProcessor.js
 import sharp from 'sharp';
 
 // Define desired outputs matching your screenshot
@@ -9,6 +8,7 @@ const RENDITIONS = [
     { name: 'story', aspect: 9 / 16, width: 1080, height: 1920 },
 ];
 
+//returns object with buffers for each rendition
 export async function generateSmartCrops(imgBytes, centerPoint) {
     const image = sharp(imgBytes);
     const metadata = await image.metadata();

@@ -1,0 +1,252 @@
+/* Variables & Reset */
+:root {
+    --pf-bg: #f8f9fa;
+    --pf-card-bg: #ffffff;
+    --pf-text-main: #212529;
+    --pf-text-sub: #6c757d;
+    --pf-accent: #0d6efd;
+    /* Bootstrap Primary Blue */
+    --pf-border: #e9ecef;
+    --pf-danger: #dc3545;
+}
+
+.pf-page {
+    min-height: 100vh;
+    background-color: var(--pf-bg);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    padding-bottom: 40px;
+}
+
+.pf-loading {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    color: var(--pf-accent);
+}
+
+/* Main Layout */
+.pf-main {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+/* Hero */
+.pf-hero {
+    margin-bottom: 24px;
+    text-align: left;
+}
+
+.pf-title {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--pf-text-main);
+    margin: 0 0 4px 0;
+}
+
+.pf-subtitle {
+    font-size: 15px;
+    color: var(--pf-text-sub);
+    margin: 0;
+}
+
+/* Cards */
+.pf-card {
+    background: var(--pf-card-bg);
+    border-radius: 16px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    border: 1px solid var(--pf-border);
+    margin-bottom: 20px;
+    overflow: hidden;
+}
+
+/* Profile Header Card */
+.pf-profile-head {
+    padding: 24px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+/* Avatar Wrapper & Upload Button */
+.pf-avatar-wrapper {
+    position: relative;
+    flex-shrink: 0;
+}
+
+.pf-avatar-container {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 3px solid white;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    position: relative;
+}
+
+.pf-avatar {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.pf-avatar-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.pf-edit-avatar-btn {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    background: var(--pf-accent);
+    color: white;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border: 2px solid white;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+    transition: transform 0.2s;
+}
+
+.pf-edit-avatar-btn:hover {
+    transform: scale(1.1);
+}
+
+/* Profile Info */
+.pf-id {
+    flex: 1;
+}
+
+.pf-name {
+    font-size: 20px;
+    font-weight: 600;
+    margin: 0 0 4px 0;
+    color: var(--pf-text-main);
+}
+
+.pf-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--pf-text-sub);
+    flex-wrap: wrap;
+}
+
+.pf-meta-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.pf-dot {
+    color: #ced4da;
+}
+
+/* Settings List */
+.pf-card-title {
+    font-size: 16px;
+    font-weight: 600;
+    padding: 16px 20px;
+    margin: 0;
+    border-bottom: 1px solid var(--pf-border);
+    color: var(--pf-text-main);
+}
+
+.pf-list {
+    display: flex;
+    flex-direction: column;
+}
+
+.pf-list-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    background: none;
+    border: none;
+    border-bottom: 1px solid var(--pf-border);
+    width: 100%;
+    text-align: left;
+    cursor: default;
+}
+
+.pf-list-item:last-child {
+    border-bottom: none;
+}
+
+button.pf-list-item {
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+button.pf-list-item:hover {
+    background-color: #f8f9fa;
+}
+
+.pf-list-left {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.pf-list-icon {
+    width: 36px;
+    height: 36px;
+    background-color: #f1f3f5;
+    color: var(--pf-text-sub);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.pf-list-title {
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--pf-text-main);
+}
+
+.text-danger {
+    color: var(--pf-danger) !important;
+}
+
+.pf-list-sub {
+    font-size: 13px;
+    color: var(--pf-text-sub);
+    margin-top: 2px;
+}
+
+.pf-arrow {
+    font-size: 20px;
+    color: #adb5bd;
+    font-weight: 300;
+}
+
+/* Logout Specific */
+.pf-logout-item .pf-list-icon {
+    background-color: #ffe3e3;
+    color: var(--pf-danger);
+}
+
+/* Mobile Tweaks */
+@media (max-width: 480px) {
+    .pf-profile-head {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .pf-meta {
+        justify-content: center;
+    }
+}

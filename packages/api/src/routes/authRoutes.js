@@ -4,11 +4,14 @@ import env from "../config/env.js";
 
 const router = express.Router();
 
-// redirect user to google login
+// redirect user to google login page to start oauth flow
 router.get("/auth/google", (req, res) => {
     const client = getClient(req);
+    // generate the oauth url with required scopes
     const url = client.generateAuthUrl({
+        //you'll get a refresh token for long term access
         access_type: "offline",
+        //forces to show consent screen every time
         prompt: "consent",
         scope: [
             "https://www.googleapis.com/auth/userinfo.profile",
@@ -19,16 +22,20 @@ router.get("/auth/google", (req, res) => {
     res.redirect(url);
 });
 
-// handle google callback and save tokens
+// handles callback from google after user logs in
 router.get("/oauth2callback", async (req, res) => {
     const client = getClient(req);
     try {
+        //exchange the temporary code for access and refresh tokens
         const { tokens } = await client.getToken(req.query.code);
 
-        // remove id_token to keep cookie size small
+        //remove the large id_token to prevent cookie size limits
+        //cookie-session has a 4kb limit and id_token often exceeds this limit
         if (tokens.id_token) delete tokens.id_token;
 
+        //store tokens in the user's session cookie
         req.session.tokens = tokens;
+        //redirect user to dashboard in frontend
         res.redirect(`${env.FRONTEND_ORIGIN}/dashboard`);
     } catch (e) {
         console.error("oauth callback error", e);
@@ -36,13 +43,13 @@ router.get("/oauth2callback", async (req, res) => {
     }
 });
 
-// clear session
+// destroys the user session to log them out
 router.get("/logout", (req, res) => {
     req.session = null;
     res.status(200).send("Logged out");
 });
 
-// debug endpoint
+//debugging endpoint to check if session exists
 router.get("/api/debug/session", (req, res) => {
     res.json({ hasTokens: !!req.session.tokens });
 });

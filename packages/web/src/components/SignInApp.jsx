@@ -1,15 +1,14 @@
-
 import React, { useState } from "react";
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } from "firebase/auth";
 import { setDoc, doc, serverTimestamp } from "firebase/firestore";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-// Initialized Firebase exports
+// initialized firebase exports
 import { auth, db } from "./auth/firebase";
 
 export default function SignInApp() {
-    const [mode, setMode] = useState("signin"); // 'signin' | 'signup'
+    const [mode, setMode] = useState("signin");
     const [loading, setLoading] = useState(false);
 
     const [signIn, setSignIn] = useState({ email: "", password: "" });
@@ -19,9 +18,11 @@ export default function SignInApp() {
         e.preventDefault();
         setLoading(true);
         try {
+            // authenticate user against firebase auth service
             await signInWithEmailAndPassword(auth, signIn.email, signIn.password);
             toast.success("Signed in!");
-            //navigate to next page i.e connect to google photos
+
+            // force full page redirect to ensure clean state reset for the connect page
             window.location.href = "/connect";
         } catch (err) {
             toast.error(err.message || "Sign-in failed");
@@ -32,27 +33,34 @@ export default function SignInApp() {
 
     const onSignUp = async (e) => {
         e.preventDefault();
+
+        // client-side validation before making network request
         if (signUp.password !== signUp.confirmPassword) {
             toast.error("Passwords do not match");
             return;
         }
+
         setLoading(true);
         try {
+            // create new authentication record in firebase
             const { user } = await createUserWithEmailAndPassword(auth, signUp.email, signUp.password);
-            //Set display name
+
+            // update auth profile immediately so displayname is available on first login
             await updateProfile(user, { displayName: signUp.username });
 
-            // create a user profile doc (prevent storing raw passwords)
+            // create a public user document in firestore
+            // using uid as document key links auth to database data
             await setDoc(doc(db, "users", user.uid), {
                 uid: user.uid,
                 username: signUp.username,
                 email: signUp.email,
-                createdAt: serverTimestamp(),
+                createdAt: serverTimestamp(), // server-side timestamp for accuracy
                 provider: "password",
             });
 
             toast.success("Account created!");
-            // prefill sign-in form and switch to sign-in mode
+
+            // prefill sign-in fields and switch view to improve ux
             setSignIn({ email: signUp.email, password: signUp.password });
             setMode("signin");
         } catch (err) {
@@ -65,7 +73,7 @@ export default function SignInApp() {
     return (
         <div className="container py-5">
             <div className="row g-4">
-                {/* Sign In */}
+                {/* Sign In Form */}
                 <div className="col-12 col-md-6">
                     <h1 className="mb-4">Sign in</h1>
                     <form onSubmit={onSignIn} className="my-custom-card card p-4 shadow">
@@ -106,7 +114,7 @@ export default function SignInApp() {
                     </form>
                 </div>
 
-                {/* Create Account (toggle) */}
+                {/* Sign Up Form (Conditional Render) */}
                 {mode === "signup" && (
                     <div className="col-12 col-md-6">
                         <h2 className="mb-4">Create account</h2>

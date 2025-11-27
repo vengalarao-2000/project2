@@ -37,9 +37,8 @@ export default function InProgressSection({ items }) {
                             <div key={item.id} className="col-12 col-sm-6 col-lg-4">
                                 <div
                                     className="bg-white rounded-3 overflow-hidden shadow-sm h-100 cursor-pointer position-relative hover-shadow-lg transition"
-                                    // --- REDIRECT TO RENDITIONS PAGE ---
+                                    //redirect to renditions page
                                     onClick={() => navigate(`/review/${item.id}`)}
-                                // -----------------------------------
                                 >
                                     <div className="position-absolute top-0 end-0 p-2">
                                         <span className="badge bg-warning text-dark shadow-sm">Action Required</span>

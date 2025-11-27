@@ -3,7 +3,7 @@ import { auth } from "./firebase";
 // 1. Import signOut
 import { onAuthStateChanged, setPersistence, browserLocalPersistence, signOut } from "firebase/auth";
 
-const API_BASE = "http://localhost:3000"; // Or process.env.VITE_API_URL
+const API_BASE = "http://localhost:3000";
 
 // 2. Update context definition to include logout
 const Ctx = createContext({
@@ -32,6 +32,7 @@ export function AuthProvider({ children }) {
             // We do this BEFORE signing out so we still have a valid token to send to the backend.
             if (user) {
                 const token = await user.getIdToken();
+                //Delete session items
                 await fetch(`${API_BASE}/api/session/clear`, {
                     method: 'DELETE',
                     headers: {

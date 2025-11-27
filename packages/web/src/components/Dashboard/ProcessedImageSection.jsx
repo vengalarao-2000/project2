@@ -1,8 +1,10 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom"; // 1. Import useNavigate hook
 
-//Section-3: All images (cropped) are stored permanently and can be accessed by a public URL.
-//here use <img> tag instead of ProtectedImage as we are retrieving the image using public URL on storage bucket in firestore.
+// Section-3: All images (cropped) are stored permanently and can be accessed by a public URL.
 export default function ProcessedImageSection({ processed }) {
+    const navigate = useNavigate(); // 2. Initialize the hook
+
     const [selectedLabel, setSelectedLabel] = useState("All");
     const [selectedMood, setSelectedMood] = useState("All");
 
@@ -23,18 +25,9 @@ export default function ProcessedImageSection({ processed }) {
         setSelectedMood("All");
     };
 
-    if (processed.length === 0) {
-        return (
-            <section className="card shadow-sm mt-3">
-                <div className="card-body">
-                    <h2 className="h5 mb-2">Generated Results</h2>
-                    <p className="text-muted mb-0">
-                        No generated captions yet — select photos above and click <b>Generate</b>.
-                    </p>
-                </div>
-            </section>
-        );
-    }
+
+    //keeping this check here is good practice for standalone usage.
+    if (processed.length === 0) return null;
 
     return (
         <section className="card shadow-sm mt-3">
@@ -72,7 +65,7 @@ export default function ProcessedImageSection({ processed }) {
                     )}
                 </div>
 
-                {/* no records exist after filtering */}
+                {/* No records exist after filtering */}
                 {filtered.length === 0 && (
                     <p className="text-muted mb-2">No results match the selected filters.</p>
                 )}
@@ -80,7 +73,17 @@ export default function ProcessedImageSection({ processed }) {
                 <div className="row g-3 g-sm-4">
                     {filtered.map((p) => (
                         <div key={p.id} className="col-12 col-sm-6 col-lg-4">
-                            <div className="bg-light rounded-3 overflow-hidden shadow-sm h-100">
+                            <div
+                                className="bg-light rounded-3 overflow-hidden shadow-sm h-100 position-relative hover-shadow-lg transition"
+                                // 3. Add Click Handler
+                                onClick={() => navigate(`/refine/${p.id}`)}
+                                style={{ cursor: 'pointer', transition: 'transform 0.2s' }}
+                            >
+                                {/* Overlay hint on hover */}
+                                <div className="position-absolute top-0 end-0 p-2 opacity-0 hover-opacity-100 transition-opacity">
+                                    <span className="badge bg-primary shadow-sm">Edit & Refine</span>
+                                </div>
+
                                 <img
                                     src={p.url}
                                     alt=""
@@ -92,7 +95,9 @@ export default function ProcessedImageSection({ processed }) {
                                 <div className="p-3">
                                     <p className="fw-semibold mb-1">{p.caption || "Caption not generated"}</p>
                                     <p className="text-muted mb-1">
-                                        <b>Labels:</b> {(p.labels || []).join(", ")}
+                                        <b>Labels:</b> {(p.labels || []).slice(0, 3).join(", ")}
+                                        {/* Truncate labels visually if there are too many */}
+                                        {(p.labels?.length > 3) && "..."}
                                     </p>
                                     <p className="text-muted mb-0">
                                         <b>Moods:</b> {(p.moods || []).join(", ")}

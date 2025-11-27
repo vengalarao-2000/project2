@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 
 const API_BASE = "http://localhost:3000";
 
-//Images in Section-2 are accessed by the URL provided by Google Photos Picker API so this component calls the URL with required authorization headers and tokens
+//Images in Section-1 are accessed by the URL provided by Google Photos Picker API so this component calls the URL with required authorization headers and tokens
 export default function ProtectedImage({ src, alt, className, style }) {
     const [imageUrl, setImageUrl] = useState(null);
     const [error, setError] = useState(false);
@@ -24,7 +24,7 @@ export default function ProtectedImage({ src, alt, className, style }) {
                 const proxyUrl = `${API_BASE}/api/proxy-image?url=${encodeURIComponent(src)}`;
 
                 const response = await fetch(proxyUrl, {
-                    credentials: "include" // <--- CRITICAL: Sends the session cookie
+                    credentials: "include" //Sends the session cookie
                 });
 
                 if (response.ok) {

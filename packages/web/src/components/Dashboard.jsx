@@ -1,4 +1,6 @@
 import { useRef, useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
 import RawImageSection from "./Dashboard/RawImageSection";
 import ProcessedImageSection from "./Dashboard/ProcessedImageSection";
 import InProgressSection from "./Dashboard/InProgressSection";
@@ -15,10 +17,13 @@ const API_BASE = "http://localhost:3000";
 export default function Dashboard() {
     const { user } = useAuth();
 
-    // --- STATE ---
+    //3 states for 3 sections in dashboard.
+    //Section-1,2 are valid only for the session and deleted once user logs out.
+    //Section-3 is permanent history of processed items.
     const [unprocessedItems, setUnprocessedItems] = useState([]);
     const [inProgressItems, setInProgressItems] = useState([]);
     const [processed, setProcessed] = useState([]);
+    const navigate = useNavigate();
 
     const [selectedIds, setSelectedIds] = useState(new Set());
     const [toastMsg, setToastMsg] = useState(null);
@@ -29,13 +34,16 @@ export default function Dashboard() {
     const [error, setError] = useState("");
 
     const pollingRef = useRef(null);
+    const fileInputRef = useRef(null);
 
     // 1. Real-time Listener
     useEffect(() => {
         if (!user) return;
+        // Get session_items collection for unprocessed & in-progress items
         const q = query(collection(db, `users/${user.uid}/session_items`), orderBy("createdAt", "desc"));
         const unsubscribe = onSnapshot(q, (snapshot) => {
             const allItems = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            //segregate items based on status into section-1 and section-2 respectively
             setUnprocessedItems(allItems.filter(i => i.status === 'picked'));
             setInProgressItems(allItems.filter(i => i.status === 'analyzing' || i.status === 'ready_for_selection'));
         });
@@ -51,11 +59,13 @@ export default function Dashboard() {
         try {
             setLoadingHistory(true);
             const idToken = await currentUser.getIdToken();
+            // Call backend to get processed items i.e permanent storage
             const res = await fetch(`${API_BASE}/api/processed`, {
                 headers: { Authorization: `Bearer ${idToken}` },
             });
             if (res.ok) {
                 const data = await res.json();
+                // populate section-3 with permanent processed items
                 setProcessed(data.items || []);
             }
         } catch (e) {
@@ -70,34 +80,44 @@ export default function Dashboard() {
         try {
             setError("");
             setPicking(true);
+            // Call backend to create Google Picker session
             const res = await fetch(`${API_BASE}/api/picker/create-session`, { credentials: "include" });
             if (res.status === 401) { window.location.href = `${API_BASE}/auth/google`; return; }
             const { pickerUri, sessionId } = await res.json();
+            // Open Google Picker in new popup window
             const popup = window.open(pickerUri, '_blank', 'width=800,height=600');
             if (!popup) { setError("Popup blocked!"); setPicking(false); return; }
             pollForPhotos(sessionId, popup);
         } catch (e) { console.error(e); setPicking(false); }
     }
 
+    //polling function to check for photo selection completion
+    // once complete, close popup and save selected photos to session storage
+    //bridges the gap between pop up window and main dashboard
     async function pollForPhotos(sessionId, popupWindow) {
         if (pollingRef.current) clearInterval(pollingRef.current);
+        //poll every 2 seconds
         pollingRef.current = setInterval(async () => {
             try {
                 const res = await fetch(`${API_BASE}/api/picker/poll-session?sessionId=${sessionId}`, { credentials: "include" });
                 const data = await res.json();
+                // If selection is complete
                 if (data.status === "complete") {
                     clearInterval(pollingRef.current);
                     if (popupWindow && !popupWindow.closed) popupWindow.close();
                     setPicking(false);
+                    // Save selected items to session storage and set the source as 'google-picker'
                     await saveToSession(data.items, 'google-picker');
                 }
-            } catch (e) { /* ... */ }
+            } catch (e) { console.error(e); }
         }, 2000);
     }
 
+    //handle local file uploads
     const handleLocalUpload = async (event) => {
         const files = Array.from(event.target.files);
         if (!files.length) return;
+        // Prepare items for session storage
         const items = await Promise.all(files.map(async file => ({
             source: 'local',
             filename: file.name,
@@ -107,8 +127,10 @@ export default function Dashboard() {
         await saveToSession(items, 'local');
     };
 
+    // save selected/uploaded items to session storage via backend API
     async function saveToSession(items, source) {
         const idToken = await user.getIdToken();
+        // Call backend to save to session_items
         await fetch(`${API_BASE}/api/session/draft`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${idToken}` },
@@ -116,6 +138,7 @@ export default function Dashboard() {
         });
     }
 
+    //handle analyze using backend API
     async function handleAnalyze() {
         if (selectedIds.size === 0) return;
         try {
@@ -136,6 +159,7 @@ export default function Dashboard() {
         }
     }
 
+    //finalize selection and save to permanent storage
     async function handleFinalize(sessionId, selectedCrop) {
         try {
             const idToken = await user.getIdToken();
@@ -156,14 +180,17 @@ export default function Dashboard() {
         }
     }
 
+    //toggle selection of individual items in unprocessed section
     const toggleOne = (id) => {
         setSelectedIds(prev => {
             const next = new Set(prev);
+            //delete if already selected else add to selection
             next.has(id) ? next.delete(id) : next.add(id);
             return next;
         });
     };
 
+    //select or deselect all items in unprocessed section
     const toggleAll = () => {
         setSelectedIds(prev =>
             prev.size === unprocessedItems.length ? new Set() : new Set(unprocessedItems.map(i => i.id))
@@ -177,6 +204,9 @@ export default function Dashboard() {
             <Toast message={toastMsg} onClose={() => setToastMsg(null)} />
 
             <main className="container py-4">
+                <button onClick={() => navigate('/connect')} className="btn btn-link text-decoration-none mb-3 ps-0">
+                    <ArrowLeft size={16} /> Back to Connect
+                </button>
                 {/* HEADER */}
                 <div className="d-flex justify-content-between align-items-center mb-5 pb-3 border-bottom">
                     <div>
@@ -185,12 +215,47 @@ export default function Dashboard() {
                     </div>
 
                     <div className="d-flex gap-2">
-                        <input type="file" id="local-upload" multiple className="d-none" onChange={handleLocalUpload} />
-                        <label htmlFor="local-upload" className="btn btn-outline-secondary d-flex align-items-center gap-2">
-                            <i className="bi bi-upload"></i> Upload File
-                        </label>
+                        {/* HIDDEN INPUT: 
+                            We use visibility: hidden and position: absolute so it remains 
+                            in the DOM (clickable via script) but invisible to the user.
+                        */}
+                        <input
+                            type="file"
+                            ref={fileInputRef}
+                            multiple
+                            accept="image/*" // Limit to images
+                            style={{
+                                opacity: 0,
+                                position: "absolute",
+                                zIndex: -1,
+                                width: 0,
+                                height: 0
+                            }}
+                            onChange={handleLocalUpload}
+                        />
 
-                        <button className="btn btn-outline-primary d-flex align-items-center gap-2" onClick={openPicker} disabled={picking}>
+                        {/* UPLOAD BUTTON */}
+                        <button
+                            type="button" // Important: Prevents form submit behavior
+                            className="btn btn-outline-secondary d-flex align-items-center gap-2"
+                            onClick={() => {
+                                // Reset value so selecting the same file twice triggers onChange
+                                if (fileInputRef.current) {
+                                    fileInputRef.current.value = '';
+                                    fileInputRef.current.click();
+                                }
+                            }}
+                        >
+                            <i className="bi bi-upload"></i> Upload File
+                        </button>
+
+                        {/* GOOGLE PICKER BUTTON */}
+                        <button
+                            type="button"
+                            className="btn btn-outline-primary d-flex align-items-center gap-2"
+                            onClick={openPicker}
+                            disabled={picking}
+                        >
                             <i className="bi bi-google"></i> {picking ? "Waiting..." : "Pick from Google Photos"}
                         </button>
                     </div>
@@ -293,6 +358,7 @@ function EmptySection({ message }) {
     );
 }
 
+// Helper to convert file to base64 string
 const toBase64 = file => new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.readAsDataURL(file);

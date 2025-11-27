@@ -21,7 +21,7 @@ const env = {
     VERTEX_LOCATION: process.env.VERTEX_LOCATION || "us-central1",
     VERTEX_MODEL: process.env.VERTEX_MODEL || "gemini-2.5-flash",
     SESSION_SECRET: process.env.SESSION_SECRET || "dev-secret",
-    // Add your GCP Project ID specifically for Vision API if different from Firebase
+    //for vision API
     GCP_PROJECT_ID: process.env.GOOGLE_PROJ_ID,
 
 };

@@ -2,7 +2,6 @@ import React, { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Download, Eye, ArrowLeft } from "lucide-react";
 import "../styles/renditions.min.css";
-import { NavBar } from "./NavBar"; // Use your existing NavBar
 import { db } from "./auth/firebase";
 import { doc, getDoc } from "firebase/firestore";
 import { useAuth } from "./auth/AuthContext";
@@ -70,14 +69,14 @@ export default function Renditions() {
     // 3. Helper to build cards from data
     const cards = useMemo(() => {
         if (!item || !item.renditions) return [];
-
+        //4 Rendition types with aspect ratios
         const base = [
             { id: "square", w: 1, h: 1, label: "1:1 • Square" },
             { id: "portrait", w: 4, h: 5, label: "4:5 • Portrait" },
             { id: "landscape", w: 16, h: 9, label: "16:9 • Landscape" },
             { id: "story", w: 9, h: 16, label: "9:16 • Story" },
         ];
-
+        // Map to include actual URLs and computed widths
         return base.map(r => ({
             ...r,
             src: item.renditions[r.id], // Get real URL from backend data
