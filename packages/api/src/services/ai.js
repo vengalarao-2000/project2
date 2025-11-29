@@ -2,6 +2,7 @@ import vision from "@google-cloud/vision";
 import { VertexAI } from "@google-cloud/vertexai";
 import env from "../config/env.js";
 import sharp from 'sharp';
+import { EVENTS, trackServerEvent } from "./analytics.js";
 
 // initialize clients with specific project id to avoid ghost project issues
 const visionClient = new vision.ImageAnnotatorClient({
@@ -146,6 +147,12 @@ export async function generateEnrichedMetadata(petName, prompt, labels) {
         return JSON.parse(cleanJson);
     } catch (e) {
         console.error("Gemini generation failed", e);
+
+        // Track this specific AI failure
+        await trackServerEvent("system", EVENTS.API_ERROR, {
+            endpoint: "internal/gemini_generation",
+            error_message: e.message
+        });
         return {
             caption: "A lovely moment captured in time.",
             moods: ["happy", "memorable", "cute", "sweet", "lovely"],
@@ -189,6 +196,11 @@ export async function refineText(currentCaption, userInstruction) {
 
     } catch (e) {
         console.error("Failed to get refined caption from Gemini", e);
+        //track error
+        await trackServerEvent("system", EVENTS.API_ERROR, {
+            endpoint: "internal/gemini_refine",
+            error_message: e.message
+        });
         // Return fallback structure matching success shape
         return {
             caption: currentCaption || "A lovely moment captured in time.",
@@ -309,6 +321,11 @@ export async function fuseTextOnImage(imgBuffer, text) {
 
     } catch (error) {
         console.error("  [ai service] error inside fusetextonimage:", error);
+        // Track image processing failure
+        await trackServerEvent("system", EVENTS.API_ERROR, {
+            endpoint: "internal/sharp_fuse",
+            error_message: error.message
+        });
         throw error;
     }
 }

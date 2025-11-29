@@ -25,6 +25,13 @@ export function exportProcessedCSV(processed) {
         // 4. Narrative
         const narrativeCol = safeCSV(p.narrative || "");
 
+        // Track the event: User exported CSV of results
+        ReactGA.event({
+            category: "User Engagement",
+            action: "Export CSV",
+            label: "User Downloaded CSV of Processed Results"
+        });
+
         return `${captionCol},${labelsCol},${moodsCol},${narrativeCol}`;
     });
 

@@ -23,6 +23,9 @@ const env = {
     SESSION_SECRET: process.env.SESSION_SECRET || "dev-secret",
     //for vision API
     GCP_PROJECT_ID: process.env.GOOGLE_PROJ_ID,
+    //Google Analytics Configs
+    GA_MEASUREMENT_ID: process.env.GA_MEASUREMENT_ID,
+    GA_API_SECRET: process.env.GA_API_SECRET,
 
 };
 

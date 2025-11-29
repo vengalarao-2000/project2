@@ -31,6 +31,7 @@ export function NavBar() {
                 )}
 
                 {/* Signed Out Links */}
+                {/* display in navbar when user is not logged in */}
                 {!user && (
                     <div id="nav" className="collapse navbar-collapse">
                         <ul className="navbar-nav ms-auto mb-2 mb-lg-0">

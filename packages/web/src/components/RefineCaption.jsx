@@ -6,6 +6,8 @@ import { db } from "./auth/firebase";
 import { useAuth } from "./auth/AuthContext";
 import "../styles/refineCaption.min.css";
 import { Toast } from "./Toast";
+import ReactGA from 'react-ga4';
+import { logToCloud } from "../utils/logger";
 
 const API_BASE = "http://localhost:3000";
 
@@ -56,7 +58,10 @@ export default function RefineCaption() {
                         setImageLoaded(false);
                     }
                 }
-            } catch (e) { console.error(e); }
+            } catch (e) {
+                console.error(e);
+                logToCloud("Failed to fetch refine data", "ERROR", { photoId: id, error: e.message });
+            }
             finally { setLoading(false); }
         }
         fetchData();
@@ -65,7 +70,16 @@ export default function RefineCaption() {
     // 2. Call AI to Refine Text
     const handleRefine = async () => {
         if (!userInstruction.trim()) return;
+        // Track the event: User refined caption using AI
+        ReactGA.event({
+            category: "AI Engagement",
+            action: "Refine Text",
+            label: `Instruction Length: ${userInstruction.length}`
+        });
+
         setIsRefining(true);
+        logToCloud("User initiated text refinement", "INFO", { instruction_length: userInstruction.length });
+
         try {
             // Call backend API to refine caption
             // Get ID token of user from auth
@@ -82,7 +96,10 @@ export default function RefineCaption() {
             setCaption(result.caption);
             setNarrative(result.narrative);
             setUserInstruction(""); // Clear input after success
-        } catch (e) { console.error(e); }
+        } catch (e) {
+            console.error(e);
+            logToCloud("Text refinement failed", "ERROR", { error: e.message });
+        }
         finally { setIsRefining(false); }
     };
 
@@ -95,6 +112,15 @@ export default function RefineCaption() {
     // 3. Save Changes to DB
     //User can refine the caption, narrative multiple times before saving
     const handleSave = async () => {
+        logToCloud("User clicking save on refinements", "INFO", { photoId: id });
+
+        // Track the event: User saved refinements
+        ReactGA.event({
+            category: "User Engagement",
+            action: "Save Refinements",
+            label: fusedImageUrl ? "With Fused Image" : "Text Only"
+        });
+
         try {
             //Get ID token of user from auth
             const token = await user.getIdToken();
@@ -127,17 +153,30 @@ export default function RefineCaption() {
             if (result.updatedData.fusedUrl) {
                 setFusedImageUrl(result.updatedData.fusedUrl);
             }
-
+            logToCloud("Refinements saved successfully", "INFO", { photoId: id });
             showToast({ message: "Saved successfully!", type: "success" });
+            ReactGA.event({
+                category: "User Action",
+                action: "Save Refinements",
+                label: "Success"
+            });
 
         } catch (e) {
             console.error("Save failed", e);
+            logToCloud("Failed to save refinements", "ERROR", { error: e.message });
             showToast({ message: "Failed to save changes.", type: "error" });
         }
     };
 
     // 4. Fuse Image with Caption
     const handleFuse = async () => {
+        // Track the event: User initiated image fusion
+        ReactGA.event({
+            category: "Core Feature",
+            action: "Generate Fuse Preview",
+            label: "Started"
+        });
+        logToCloud("User generating fused image preview", "INFO");
         setIsFusing(true);
         setImageLoaded(false); //reset to show spinner for new preview
         try {
@@ -161,6 +200,7 @@ export default function RefineCaption() {
 
         } catch (e) {
             console.error(e);
+            logToCloud("Fuse preview generation failed", "ERROR", { error: e.message });
             showToast({ message: "Failed to generate preview", type: "error" });
         } finally {
             //Stops the spinner of fused image section
@@ -171,6 +211,17 @@ export default function RefineCaption() {
     // 5. Download Fused Image
     const handleDownload = async () => {
         if (!fusedImageUrl) return;
+
+        // Track the event: User downloaded fused image (Conversion Success)
+        ReactGA.event({
+            category: "Conversion",
+            action: "Download Fused Image",
+            label: "Success"
+        });
+        logToCloud("User downloading image", "INFO", {
+            type: fusedImageUrl.startsWith("data:") ? "preview" : "saved_url"
+        });
+
 
         // If it's a Base64 string (Preview i.e not yet saved), we can download directly via <a> tag
         if (fusedImageUrl.startsWith("data:")) {

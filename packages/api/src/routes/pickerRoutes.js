@@ -1,12 +1,15 @@
 import express from "express";
 import { getClient } from "../services/googleAuth.js";
-import { requireGoogle } from "../middleware/auth.js";
+import { requireGoogle, requireFirebaseUser } from "../middleware/auth.js";
+import { EVENTS, trackServerEvent } from "../services/analytics.js";
+import { logToCloud } from "../services/logger.js";
 
 const router = express.Router();
 
 // initiate picker session
 //creates a session with google photos api and returns the pickerUri and sessionId to the client
-router.get("/api/picker/create-session", requireGoogle, async (req, res) => {
+router.get("/api/picker/create-session", requireGoogle, requireFirebaseUser, async (req, res) => {
+    const trackingId = "picker_user";
     console.log("[picker routes] create-session request received.");
     const client = getClient(req);
     const { token } = await client.getAccessToken();
@@ -27,16 +30,38 @@ router.get("/api/picker/create-session", requireGoogle, async (req, res) => {
         const session = await response.json();
 
         console.log(`[picker routes] session created successfully. id: ${session.id}`);
+
+        // Log Success
+        await logToCloud("Picker session created", "INFO", {
+            uid: req.user.uid,
+            message: "Picker session created successfully",
+        });
+
+        // Track Success: Picker Session Created
+        // This tells us how many times users intended to pick photos
+        await trackServerEvent(trackingId, EVENTS.PICKER_SESSION_CREATED, {
+            session_id: session.id
+        });
+
         res.json({ pickerUri: session.pickerUri, sessionId: session.id });
     } catch (e) {
         console.error("[picker routes] picker session creation failed:", e);
+        await logToCloud("Picker session failed", "ERROR", {
+            uid: req.user.uid,
+            message: "Picker session creation failed: " + e.message,
+        });
+        // Track Error
+        await trackServerEvent(trackingId, EVENTS.API_ERROR, {
+            endpoint: "/api/picker/create-session",
+            error_message: e.message
+        });
         res.status(500).json({ error: e.message });
     }
 });
 
 // check session status
 // polls the google photos api to see if the user has finished selecting photos
-router.get("/api/picker/poll-session", requireGoogle, async (req, res) => {
+router.get("/api/picker/poll-session", requireGoogle, requireFirebaseUser, async (req, res) => {
     const { sessionId } = req.query;
     console.log(`[picker routes] poll-session request for session id: ${sessionId}`);
 
@@ -72,6 +97,17 @@ router.get("/api/picker/poll-session", requireGoogle, async (req, res) => {
             }));
 
             console.log(`[picker routes] retrieved ${items.length} items.`);
+
+            await logToCloud("Polling images complete", "INFO", {
+                uid: req.user.uid,
+                message: "Polling completed and items retrieved",
+                itemCount: items.length,
+            });
+            // Track Completion: Picker Selection Complete
+            await trackServerEvent(req.user.uid, "api_picker_selection_complete", {
+                item_count: items.length,
+                session_id: sessionId
+            });
             return res.json({ status: "complete", items });
         }
 

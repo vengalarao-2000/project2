@@ -9,6 +9,7 @@ import pickerRoutes from "./routes/pickerRoutes.js";
 import processRoutes from "./routes/processRoutes.js";
 import sessionRoutes from './routes/sessionRoutes.js'
 import editRoutes from './routes/editRoutes.js';
+import logRoutes from './routes/logRoutes.js';
 
 const app = express();
 
@@ -34,6 +35,8 @@ app.use(pickerRoutes);
 app.use(processRoutes);
 app.use(sessionRoutes);
 app.use(editRoutes);
+//for frontend logging
+app.use(logRoutes);
 
 app.listen(env.PORT, () => {
     console.log(`server running on port ${env.PORT}`);

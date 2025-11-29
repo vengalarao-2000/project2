@@ -2,6 +2,8 @@ import express from "express";
 import { admin, bucket, db } from "../services/firebase.js";
 import { requireFirebaseUser } from "../middleware/auth.js";
 import { refineText, fuseTextOnImage } from "../services/ai.js";
+import { EVENTS, trackServerEvent } from "../services/analytics.js";
+import { logToCloud } from "../services/logger.js";
 
 const router = express.Router();
 
@@ -9,6 +11,9 @@ const router = express.Router();
 // 1. POST /api/refine-text
 // Uses Gemini to rewrite caption & narrative based on user instruction
 router.post("/api/refine-text", requireFirebaseUser, async (req, res) => {
+    const { uid } = req.user;
+    const startTime = Date.now();
+    console.log("[session routes] refine-text request received from user:", uid);
     const { currentCaption, instruction } = req.body;
 
     if (!instruction) {
@@ -16,11 +21,33 @@ router.post("/api/refine-text", requireFirebaseUser, async (req, res) => {
     }
 
     try {
+        await logToCloud("Refine request started", "INFO", {
+            uid: uid,
+            message: "Refine text request initiated",
+        });
         // Call the helper function we created in ai.js
         const result = await refineText(currentCaption, instruction);
+        // Track Success: AI Refinement
+        await trackServerEvent(uid, EVENTS.REFINE_SUCCESS, {
+            instruction_length: instruction.length,
+            duration_ms: Date.now() - startTime
+        });
+        await logToCloud("Refine request end", "INFO", {
+            uid: uid,
+            message: "Refine text request completed",
+        });
         res.json(result);
     } catch (e) {
         console.error("Refine text error:", e);
+        await logToCloud("Refine request failed", "ERROR", {
+            uid: uid,
+            message: "Refine text request failed: " + e.message,
+        });
+        // Track error
+        await trackServerEvent(uid, EVENTS.API_ERROR, {
+            endpoint: "/api/refine-text",
+            error_message: e.message
+        });
         res.status(500).json({ error: "Failed to refine text" });
     }
 });
@@ -31,8 +58,14 @@ router.post("/api/refine-text", requireFirebaseUser, async (req, res) => {
 // Returns a Base64 string so the frontend can display it immediately
 // without filling up Firebase Storage with unused drafts.
 router.post("/api/fuse-image", requireFirebaseUser, async (req, res) => {
+    const startTime = Date.now();
     const { uid } = req.user;
     const { imageUrl, caption } = req.body;
+
+    await logToCloud("Fuse image request", "INFO", {
+        uid: uid,
+        message: "Fuse image request started",
+    });
 
     console.log("--- START FUSE REQUEST (PREVIEW) ---");
     console.log("User:", uid);
@@ -75,11 +108,32 @@ router.post("/api/fuse-image", requireFirebaseUser, async (req, res) => {
         console.log("Step 4: Returning preview to client.");
         console.log("--- END FUSE REQUEST ---");
 
+        // Track Success: Image Fusion (Preview)
+        await trackServerEvent(uid, EVENTS.FUSE_SUCCESS, {
+            image_size_bytes: fusedBuffer.length,
+            duration_ms: Date.now() - startTime,
+            mode: "preview"
+        });
+
+        await logToCloud("Fuse image request", "INFO", {
+            uid: uid,
+            message: "Fuse image request completed",
+        });
         // Return the Data URI directly to the frontend
         res.json({ fusedImage: base64Image });
 
     } catch (e) {
-        console.error("!!! FUSE IMAGE ERROR !!!", e);
+        console.error("FUSE IMAGE ERROR", e);
+
+        await logToCloud("Fuse image request", "ERROR", {
+            uid: uid,
+            message: "Fuse image request failed",
+        });
+        // Track error
+        await trackServerEvent(uid, EVENTS.API_ERROR, {
+            endpoint: "/api/fuse-image",
+            error_message: e.message
+        });
         res.status(500).json({ error: "Failed to generate fused image" });
     }
 });
@@ -92,6 +146,11 @@ router.post("/api/save-refinements", requireFirebaseUser, async (req, res) => {
     const { uid } = req.user;
     const { photoId, caption, narrative, fusedImageBase64 } = req.body;
 
+    await logToCloud("Save request", "INFO", {
+        uid: uid,
+        message: "Save record request started",
+    });
+    let hasNewImage = false;
     console.log("--- START SAVE REQUEST ---");
     console.log("Photo ID:", photoId);
 
@@ -111,6 +170,8 @@ router.post("/api/save-refinements", requireFirebaseUser, async (req, res) => {
         // If the user didn't change the image, this might be null or an existing URL
         if (fusedImageBase64 && fusedImageBase64.startsWith('data:image')) {
             console.log("Step 1: Processing new fused image upload...");
+            //saving fused image
+            hasNewImage = true;
 
             // 1. Convert Base64 string back to binary Buffer
             // Remove the "data:image/jpeg;base64," prefix
@@ -148,11 +209,31 @@ router.post("/api/save-refinements", requireFirebaseUser, async (req, res) => {
 
         console.log("--- END SAVE REQUEST ---");
 
+        // Track Success: User Saved Refinements
+        await trackServerEvent(uid, EVENTS.REFINE_SUCCESS, {
+            has_image: hasNewImage,
+            caption_length: caption?.length || 0
+        });
+
+        await logToCloud("Save request", "INFO", {
+            uid: uid,
+            message: "Save record request completed",
+        });
+
         // Return the updated data (including new URL if generated) so frontend can update state
         res.json({ success: true, updatedData: updates });
 
     } catch (e) {
         console.error("Save refinements error:", e);
+        await logToCloud("Save request", "ERROR", {
+            uid: uid,
+            message: "Save record request failed: " + e.message,
+        });
+        //track error
+        await trackServerEvent(uid, EVENTS.API_ERROR, {
+            endpoint: "/api/save-refinements",
+            error_message: e.message
+        });
         res.status(500).json({ error: "Failed to save changes" });
     }
 });

@@ -5,12 +5,14 @@ import express from "express";
 // 1. Import 'bucket' to access Cloud Storage
 import { admin, db, bucket } from "../services/firebase.js";
 import { requireFirebaseUser } from "../middleware/auth.js";
+import { EVENTS, trackServerEvent } from "../services/analytics.js";
 
 const router = express.Router();
 
 // POST /api/session/draft
 //Handles both local uploads (base64 to storage) and Google Photos picks (just save metadata to Firestore)
 router.post("/api/session/draft", requireFirebaseUser, async (req, res) => {
+    const startTime = Date.now();
     const { uid } = req.user;
     const { items, source } = req.body; //source can be 'google-picker' or 'local'
 
@@ -18,6 +20,11 @@ router.post("/api/session/draft", requireFirebaseUser, async (req, res) => {
     console.log(`[session routes] source: ${source}, items count: ${items?.length}`);
 
     if (!items || !Array.isArray(items)) {
+        // Track error
+        await trackServerEvent(uid, EVENTS.API_ERROR, {
+            endpoint: "/api/session/draft",
+            error_message: "Invalid items payload"
+        });
         return res.status(400).json({ error: "Invalid items" });
     }
 
@@ -83,10 +90,25 @@ router.post("/api/session/draft", requireFirebaseUser, async (req, res) => {
 
         await batch.commit();
         console.log("[session routes] drafts saved successfully.");
+
+        // Track Success: Session Draft Created
+        // If source is 'local', this tracks a "Direct Upload" event
+        // If source is 'google-picker', this tracks a "Google Photos Import" event
+        await trackServerEvent(uid, "api_session_draft_saved", {
+            source: source,
+            item_count: items.length,
+            duration_ms: Date.now() - startTime
+        });
+
         res.json({ success: true, count: items.length });
 
     } catch (e) {
         console.error("Failed to save drafts:", e);
+        // Track error
+        await trackServerEvent(uid, EVENTS.API_ERROR, {
+            endpoint: "/api/session/draft",
+            error_message: e.message
+        });
         res.status(500).json({ error: e.message });
     }
 });
@@ -155,10 +177,20 @@ router.delete("/api/session/clear", requireFirebaseUser, async (req, res) => {
         await batch.commit();
 
         console.log(`[session routes] Cleared ${snapshot.size} session items and associated files for user ${uid}`);
+        // Track Success: Session Cleared (Logout)
+        await trackServerEvent(uid, "api_session_cleared", {
+            items_deleted: snapshot.size
+        });
+
         res.json({ success: true, deleted: snapshot.size });
 
     } catch (e) {
         console.error("[session routes] Failed to clear session:", e);
+        //track error
+        await trackServerEvent(uid, EVENTS.API_ERROR, {
+            endpoint: "/api/session/clear",
+            error_message: e.message
+        });
         res.status(500).json({ error: "Failed to clear session" });
     }
 });

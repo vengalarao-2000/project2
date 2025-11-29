@@ -6,6 +6,7 @@ import { db } from "./auth/firebase";
 import { doc, getDoc } from "firebase/firestore";
 import { useAuth } from "./auth/AuthContext";
 import Syncing from "./Syncing";
+import { logToCloud } from "../utils/logger";
 
 export default function Renditions() {
     const { id } = useParams(); // Get session ID from URL
@@ -26,14 +27,23 @@ export default function Renditions() {
                 const snap = await getDoc(docRef);
                 if (snap.exists()) {
                     setItem({ id: snap.id, ...snap.data() });
+                    logToCloud("Renditions page loaded successfully", "INFO", {
+                        sessionId: id,
+                        source: "session_items"
+                    });
                 } else {
                     // Fallback: check permanent photos if user is revisiting
                     const permRef = doc(db, `users/${user.uid}/photos/${id}`);
                     const permSnap = await getDoc(permRef);
                     if (permSnap.exists()) setItem({ id: permSnap.id, ...permSnap.data() });
+                    logToCloud("Renditions page loaded (Reviewing history)", "INFO", {
+                        sessionId: id,
+                        source: "photos"
+                    });
                 }
             } catch (e) {
                 console.error(e);
+                logToCloud("Failed to fetch rendition data", "ERROR", { error: e.message });
             } finally {
                 setLoading(false);
             }
@@ -44,6 +54,10 @@ export default function Renditions() {
     // 2. Finalize Selection Logic (Save to Permanent DB)
     const handleSelect = async (cropType) => {
         setSaving(true);
+        logToCloud("User selecting crop", "INFO", {
+            sessionId: id,
+            cropType: cropType
+        });
         try {
             const idToken = await user.getIdToken();
             // Call your backend API to finalize
@@ -57,10 +71,12 @@ export default function Renditions() {
             });
 
             if (res.ok) {
+                logToCloud("Crop finalized successfully", "INFO");
                 navigate('/dashboard'); // Go back to dashboard
             }
         } catch (e) {
             console.error(e);
+            logToCloud("Failed to finalize crop selection", "ERROR", { error: e.message });
         } finally {
             setSaving(false);
         }
@@ -122,7 +138,10 @@ export default function Renditions() {
                             <div className="rd-actions">
                                 <button
                                     className="rd-btn"
-                                    onClick={() => window.open(c.src, "_blank")}
+                                    onClick={() => {
+                                        logToCloud("User viewed raw crop", "INFO", { crop: c.id });
+                                        window.open(c.src, "_blank");
+                                    }}
                                 >
                                     <Eye size={16} /> View
                                 </button>

@@ -3,6 +3,8 @@ import { createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfi
 import { setDoc, doc, serverTimestamp } from "firebase/firestore";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import ReactGA from 'react-ga4';
+import { logToCloud } from "../utils/logger";
 
 // initialized firebase exports
 import { auth, db } from "./auth/firebase";
@@ -17,14 +19,37 @@ export default function SignInApp() {
     const onSignIn = async (e) => {
         e.preventDefault();
         setLoading(true);
+        logToCloud("User attempting login", "INFO", { email: signIn.email });
         try {
             // authenticate user against firebase auth service
             await signInWithEmailAndPassword(auth, signIn.email, signIn.password);
+            // Track the event: User signed in
+            ReactGA.event({
+                category: "User Engagement",
+                action: "Login",
+                label: "Method: Password"
+            });
+
+            logToCloud("User logged in successfully", "INFO", {
+                method: "password",
+                email: signIn.email
+            });
+
             toast.success("Signed in!");
 
             // force full page redirect to ensure clean state reset for the connect page
             window.location.href = "/connect";
         } catch (err) {
+            ReactGA.event({
+                category: "Error",
+                action: "Login Failed",
+                label: err.code || err.message
+            });
+
+            logToCloud("Login failed", "ERROR", {
+                error_code: err.code,
+                error_message: err.message
+            });
             toast.error(err.message || "Sign-in failed");
         } finally {
             setLoading(false);
@@ -36,11 +61,14 @@ export default function SignInApp() {
 
         // client-side validation before making network request
         if (signUp.password !== signUp.confirmPassword) {
+            logToCloud("Sign up validation failed", "WARNING", { reason: "passwords_mismatch" });
             toast.error("Passwords do not match");
             return;
         }
 
         setLoading(true);
+        logToCloud("User attempting sign up", "INFO");
+
         try {
             // create new authentication record in firebase
             const { user } = await createUserWithEmailAndPassword(auth, signUp.email, signUp.password);
@@ -59,11 +87,32 @@ export default function SignInApp() {
             });
 
             toast.success("Account created!");
+            // Track the event: New user signed up
+            ReactGA.event({
+                category: "User Engagement",
+                action: "Sign Up",
+                label: "New User Created"
+            });
+
+            logToCloud("New user registered successfully", "INFO", {
+                uid: user.uid,
+                username: signUp.username
+            });
 
             // prefill sign-in fields and switch view to improve ux
             setSignIn({ email: signUp.email, password: signUp.password });
             setMode("signin");
         } catch (err) {
+            ReactGA.event({
+                category: "Error",
+                action: "Sign Up Failed",
+                label: err.code || err.message
+            });
+
+            logToCloud("Sign up failed", "ERROR", {
+                error_code: err.code,
+                error_message: err.message
+            });
             toast.error(err.message || "Sign-up failed");
         } finally {
             setLoading(false);

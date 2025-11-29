@@ -4,13 +4,14 @@ import { ArrowLeft } from "lucide-react";
 import RawImageSection from "./Dashboard/RawImageSection";
 import ProcessedImageSection from "./Dashboard/ProcessedImageSection";
 import InProgressSection from "./Dashboard/InProgressSection";
-
+import ReactGA from 'react-ga4';
 import { useAuth } from "./auth/AuthContext";
 import { Toast } from "./Toast";
 import Syncing from "./Syncing";
 import { onSnapshot, collection, query, orderBy } from "firebase/firestore";
 import { db } from "./auth/firebase";
 import { exportProcessedCSV } from "../utils/exportCSV";
+import { logToCloud } from "../utils/logger";
 
 const API_BASE = "http://localhost:3000";
 
@@ -67,9 +68,11 @@ export default function Dashboard() {
                 const data = await res.json();
                 // populate section-3 with permanent processed items
                 setProcessed(data.items || []);
+                logToCloud("Dashboard history loaded", "INFO", { count: data.items?.length });
             }
         } catch (e) {
             console.error("Failed to load history:", e);
+            logToCloud("Failed to load dashboard history", "ERROR", { error: e.message });
         } finally {
             setLoadingHistory(false);
         }
@@ -77,35 +80,58 @@ export default function Dashboard() {
 
     // 3. Actions
     async function openPicker() {
+        //Get the token
+        const idToken = await user.getIdToken();
+        logToCloud("User opened Google Picker", "INFO");
         try {
             setError("");
             setPicking(true);
+
+            //Track the event: User initiated photo selection from Google Photos
+            ReactGA.event({
+                category: "Select Content",
+                action: "Open Google Picker",
+                label: "Started Flow"
+            });
             // Call backend to create Google Picker session
-            const res = await fetch(`${API_BASE}/api/picker/create-session`, { credentials: "include" });
+            const res = await fetch(`${API_BASE}/api/picker/create-session`, { headers: { Authorization: `Bearer ${idToken}` }, credentials: "include" });
             if (res.status === 401) { window.location.href = `${API_BASE}/auth/google`; return; }
             const { pickerUri, sessionId } = await res.json();
             // Open Google Picker in new popup window
             const popup = window.open(pickerUri, '_blank', 'width=800,height=600');
-            if (!popup) { setError("Popup blocked!"); setPicking(false); return; }
+            if (!popup) { setError("Popup blocked!"); setPicking(false); logToCloud("Popup blocked by browser", "WARNING"); return; }
             pollForPhotos(sessionId, popup);
-        } catch (e) { console.error(e); setPicking(false); }
+        } catch (e) {
+            console.error(e);
+            setPicking(false);
+            logToCloud("Google Picker failed to open", "ERROR", { error: e.message });
+        }
     }
 
     //polling function to check for photo selection completion
     // once complete, close popup and save selected photos to session storage
     //bridges the gap between pop up window and main dashboard
     async function pollForPhotos(sessionId, popupWindow) {
+        const idToken = await user.getIdToken();
         if (pollingRef.current) clearInterval(pollingRef.current);
         //poll every 2 seconds
         pollingRef.current = setInterval(async () => {
             try {
-                const res = await fetch(`${API_BASE}/api/picker/poll-session?sessionId=${sessionId}`, { credentials: "include" });
+                const res = await fetch(`${API_BASE}/api/picker/poll-session?sessionId=${sessionId}`, { headers: { Authorization: `Bearer ${idToken}` }, credentials: "include" });
                 const data = await res.json();
                 // If selection is complete
                 if (data.status === "complete") {
                     clearInterval(pollingRef.current);
                     if (popupWindow && !popupWindow.closed) popupWindow.close();
                     setPicking(false);
+
+                    //Track the event: User completed photo selection from Google Photos
+                    ReactGA.event({
+                        category: "Select Content",     // Grouping
+                        action: "Selected from Google",  // Specific Action
+                        label: `Count: ${data.items.length}` // Metadata (How many photos)
+                    });
+                    logToCloud("Google Photos selection complete", "INFO", { count: data.items.length });
                     // Save selected items to session storage and set the source as 'google-picker'
                     await saveToSession(data.items, 'google-picker');
                 }
@@ -117,6 +143,16 @@ export default function Dashboard() {
     const handleLocalUpload = async (event) => {
         const files = Array.from(event.target.files);
         if (!files.length) return;
+
+        logToCloud("User started local upload", "INFO", { fileCount: files.length });
+
+        // Track the event: This tell if people prefer local upload or google photos
+        ReactGA.event({
+            category: "Select Content",
+            action: "Upload Local Files",
+            label: `Uploaded ${files.length} images`
+        });
+
         // Prepare items for session storage
         const items = await Promise.all(files.map(async file => ({
             source: 'local',
@@ -129,6 +165,15 @@ export default function Dashboard() {
 
     // save selected/uploaded items to session storage via backend API
     async function saveToSession(items, source) {
+        // Track the event: User added photos to session via local upload
+        if (source === 'local') {
+            ReactGA.event({
+                category: "Core Feature",
+                action: "Direct Upload",
+                label: `Count: ${items.length}`
+            });
+        }
+
         const idToken = await user.getIdToken();
         // Call backend to save to session_items
         await fetch(`${API_BASE}/api/session/draft`, {
@@ -138,9 +183,18 @@ export default function Dashboard() {
         });
     }
 
-    //handle analyze using backend API
+    //handle analyze using backend API (Unprocessed to In Progress)
     async function handleAnalyze() {
         if (selectedIds.size === 0) return;
+        logToCloud("User clicked Generate Analysis", "INFO", { count: selectedIds.size });
+
+        // Track the event: User initiated analysis on selected photos
+        ReactGA.event({
+            category: "Core Feature",
+            action: "Generate Analysis",
+            label: `Items: ${selectedIds.size}`
+        });
+
         try {
             setIsAnalyzing(true);
             setError("");
@@ -153,14 +207,28 @@ export default function Dashboard() {
             });
             setSelectedIds(new Set());
         } catch (e) {
+            ReactGA.event({
+                category: "Error",
+                action: "Analysis Failed",
+                label: e.message
+            });
+            logToCloud("Dashboard Analysis Failed", "ERROR", { error: e.message });
             setError("Failed to analyze photos.");
         } finally {
             setTimeout(() => setIsAnalyzing(false), 500);
         }
     }
 
-    //finalize selection and save to permanent storage
+    //finalize selection and save to permanent storage (in progree to Generated Results)
     async function handleFinalize(sessionId, selectedCrop) {
+        logToCloud("User finalizing crop", "INFO", { crop: selectedCrop });
+        //track the event: User finalized crop selection for a photo
+        ReactGA.event({
+            category: "Engagement",
+            action: "Selected Crop",
+            label: selectedCrop
+        });
+
         try {
             const idToken = await user.getIdToken();
             const res = await fetch(`${API_BASE}/api/finalize`, {
@@ -175,6 +243,12 @@ export default function Dashboard() {
             setToastMsg("Saved to Generated Results!");
             setTimeout(() => setToastMsg(null), 3000);
         } catch (e) {
+            logToCloud("Finalize failed", "ERROR", { error: e.message });
+            ReactGA.event({
+                category: "Error",
+                action: "Finalize Failed",
+                label: e.message
+            });
             console.error("Finalize failed", e);
             setError("Failed to save selection.");
         }

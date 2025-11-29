@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowRight, Upload, Lock, Loader2 } from "lucide-react";
 import { useAuth } from "./auth/AuthContext";
+import { logToCloud } from "../utils/logger";
 import "../styles/connect.min.css";
 
 const API_BASE = "http://localhost:3000";
@@ -25,6 +26,7 @@ const Connect = () => {
 
   // 1. Handle Google Photos Click
   const handleGoogleOAuth = () => {
+    logToCloud("User clicked Google Photos Connect", "INFO");
     // redirect to backend auth route to initiate oauth flow
     window.location.href = `${API_BASE}/auth/google`;
   };
@@ -66,6 +68,7 @@ const Connect = () => {
         body: JSON.stringify({ items, source: 'local' })
       });
 
+      logToCloud("Direct Upload Successful", "INFO", { fileCount: items.length });
       if (!res.ok) throw new Error("Upload failed");
 
       // redirect user to dashboard once backend processing is initialized
@@ -73,6 +76,7 @@ const Connect = () => {
 
     } catch (error) {
       console.error("Upload error:", error);
+      logToCloud("Direct Upload Failed", "ERROR", { error: error.message });
       alert("Failed to upload photos. Please try again.");
       setUploading(false);
     }
