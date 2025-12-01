@@ -61,7 +61,7 @@ export default function Renditions() {
         try {
             const idToken = await user.getIdToken();
             // Call your backend API to finalize
-            const res = await fetch(`http://localhost:5001/api/finalize`, {
+            const res = await fetch(`http://localhost:3000/api/finalize`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",

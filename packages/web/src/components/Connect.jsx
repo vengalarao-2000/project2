@@ -7,7 +7,7 @@ import { useAuth } from "./auth/AuthContext";
 import { logToCloud } from "../utils/logger";
 import "../styles/connect.min.css";
 
-const API_BASE = "http://localhost:5001";
+const API_BASE = "http://localhost:3000";
 
 // helper to convert file object to base64 string for upload
 const toBase64 = file => new Promise((resolve, reject) => {

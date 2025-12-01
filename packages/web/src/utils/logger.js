@@ -1,5 +1,5 @@
 //match your backend URL
-const API_BASE = "http://localhost:5001";
+const API_BASE = "http://localhost:3000";
 
 /**
  * Sends a log entry to the backend proxy for Google Cloud Logging
