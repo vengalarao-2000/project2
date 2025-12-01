@@ -1,3 +1,5 @@
+import ReactGA from 'react-ga4';
+
 export function exportProcessedCSV(processed) {
     if (!processed || processed.length === 0) return;
 

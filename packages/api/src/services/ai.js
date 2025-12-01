@@ -6,11 +6,11 @@ import { EVENTS, trackServerEvent } from "./analytics.js";
 
 // initialize clients with specific project id to avoid ghost project issues
 const visionClient = new vision.ImageAnnotatorClient({
-    projectId: env.FIREBASE_PROJECT_ID
+    projectId: env.GCP_PROJECT_ID || env.FIREBASE_PROJECT_ID
 });
 
 const vertex = new VertexAI({
-    project: env.FIREBASE_PROJECT_ID,
+    project: env.GCP_PROJECT_ID || env.FIREBASE_PROJECT_ID,
     location: env.VERTEX_LOCATION
 });
 
@@ -147,7 +147,20 @@ export async function generateEnrichedMetadata(petName, prompt, labels) {
         return JSON.parse(cleanJson);
     } catch (e) {
         console.error("Gemini generation failed", e);
+        console.error("Error Name:", e.name);
+        console.error("Error Message:", e.message);
+        if (e.response) {
+            // If it's an API error response, log the details
+            console.error("API Error Details:", JSON.stringify(e.response, null, 2));
+        }
 
+        // Check for common issues
+        if (e.message.includes("403")) {
+            console.error("PERMISSION ERROR: API not enabled or Service Account missing role.");
+        }
+        if (e.message.includes("404")) {
+            console.error("MODEL ERROR: Model not found. Check VERTEX_MODEL env var.");
+        }
         // Track this specific AI failure
         await trackServerEvent("system", EVENTS.API_ERROR, {
             endpoint: "internal/gemini_generation",

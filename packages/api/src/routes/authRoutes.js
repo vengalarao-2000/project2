@@ -36,7 +36,7 @@ router.get("/oauth2callback", async (req, res) => {
         //store tokens in the user's session cookie
         req.session.tokens = tokens;
         //redirect user to dashboard in frontend
-        res.redirect(`${env.FRONTEND_ORIGIN}/dashboard`);
+        res.redirect(`/dashboard`);
     } catch (e) {
         console.error("oauth callback error", e);
         res.status(500).send("Authentication failed");

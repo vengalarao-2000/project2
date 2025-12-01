@@ -8,6 +8,9 @@ import { useAuth } from "./auth/AuthContext";
 import Syncing from "./Syncing";
 import { logToCloud } from "../utils/logger";
 
+// dev: hit local api; prod: same origin as frontend (empty prefix)
+const API_BASE = import.meta.env.DEV ? "http://localhost:3000" : "";
+
 export default function Renditions() {
     const { id } = useParams(); // Get session ID from URL
     const { user } = useAuth();
@@ -61,7 +64,7 @@ export default function Renditions() {
         try {
             const idToken = await user.getIdToken();
             // Call your backend API to finalize
-            const res = await fetch(`http://localhost:3000/api/finalize`, {
+            const res = await fetch(`${API_BASE}/api/finalize`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",

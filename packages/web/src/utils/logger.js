@@ -1,5 +1,6 @@
 //match your backend URL
-const API_BASE = "http://localhost:3000";
+// dev: hit local api; prod: same origin as frontend (empty prefix)
+const API_BASE = import.meta.env.DEV ? "http://localhost:3000" : "";
 
 /**
  * Sends a log entry to the backend proxy for Google Cloud Logging

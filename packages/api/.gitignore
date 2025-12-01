@@ -1,2 +1,5 @@
 keys/
 .env
+public/
+
+app.yaml

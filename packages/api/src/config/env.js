@@ -22,7 +22,7 @@ const env = {
     VERTEX_MODEL: process.env.VERTEX_MODEL || "gemini-2.5-flash",
     SESSION_SECRET: process.env.SESSION_SECRET || "dev-secret",
     //for vision API
-    GCP_PROJECT_ID: process.env.GOOGLE_PROJ_ID,
+    GCP_PROJECT_ID: process.env.GCP_PROJECT_ID,
     //Google Analytics Configs
     GA_MEASUREMENT_ID: process.env.GA_MEASUREMENT_ID,
     GA_API_SECRET: process.env.GA_API_SECRET,

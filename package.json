@@ -4,7 +4,11 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build:web": "cd packages/web && npm install && npm run build",
+    "clean:api": "rimraf packages/api/public",
+    "copy:dist": "copyfiles -u 3 \"packages/web/dist/**/*\" packages/api/public",
+    "deploy:prep": "npm run build:web && npm run clean:api && npm run copy:dist",
+    "deploy": "npm run deploy:prep && cd packages/api && gcloud app deploy"
   },
   "keywords": [],
   "author": "",
@@ -13,5 +17,9 @@
   "workspaces": [
     "packages/api",
     "packages/web"
-  ]
+  ],
+  "devDependencies": {
+    "copyfiles": "^2.4.1",
+    "rimraf": "^6.1.2"
+  }
 }

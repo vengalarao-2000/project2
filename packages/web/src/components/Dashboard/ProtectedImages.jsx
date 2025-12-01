@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 
-const API_BASE = "http://localhost:3000";
+// dev: hit local api; prod: same origin as frontend (empty prefix)
+const API_BASE = import.meta.env.DEV ? "http://localhost:3000" : "";
 
 //Images in Section-1 are accessed by the URL provided by Google Photos Picker API so this component calls the URL with required authorization headers and tokens
 export default function ProtectedImage({ src, alt, className, style }) {

@@ -10,6 +10,7 @@ lerna-debug.log*
 node_modules
 ./src/components/auth/firebase.js
 ./.env
+.env.production
 dist
 dist-ssr
 *.local

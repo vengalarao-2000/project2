@@ -13,7 +13,8 @@ import { db } from "./auth/firebase";
 import { exportProcessedCSV } from "../utils/exportCSV";
 import { logToCloud } from "../utils/logger";
 
-const API_BASE = "http://localhost:3000";
+// dev: hit local api; prod: same origin as frontend (empty prefix)
+const API_BASE = import.meta.env.DEV ? "http://localhost:3000" : "";
 
 export default function Dashboard() {
     const { user } = useAuth();
