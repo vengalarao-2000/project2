@@ -3,7 +3,7 @@ import { auth } from "./firebase";
 // 1. Import signOut
 import { onAuthStateChanged, setPersistence, browserLocalPersistence, signOut } from "firebase/auth";
 
-const API_BASE = "http://localhost:3000";
+const API_BASE = "http://localhost:5001";
 
 // 2. Update context definition to include logout
 const Ctx = createContext({

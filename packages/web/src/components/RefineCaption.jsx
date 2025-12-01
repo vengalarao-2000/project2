@@ -9,7 +9,7 @@ import { Toast } from "./Toast";
 import ReactGA from 'react-ga4';
 import { logToCloud } from "../utils/logger";
 
-const API_BASE = "http://localhost:3000";
+const API_BASE = "http://localhost:5001";
 
 export default function RefineCaption() {
     // Get photo ID from URL

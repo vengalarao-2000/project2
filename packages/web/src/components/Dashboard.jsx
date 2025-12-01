@@ -13,7 +13,7 @@ import { db } from "./auth/firebase";
 import { exportProcessedCSV } from "../utils/exportCSV";
 import { logToCloud } from "../utils/logger";
 
-const API_BASE = "http://localhost:3000";
+const API_BASE = "http://localhost:5001";
 
 export default function Dashboard() {
     const { user } = useAuth();
