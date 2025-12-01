@@ -1,0 +1,96 @@
+/* --- Better text wrapping for long captions/tags --- */
+.cf-preview {
+    white-space: pre-wrap;
+    /* preserve line breaks */
+    word-break: break-word;
+    /* avoid overflow */
+    line-height: 1.35;
+}
+
+/* --- Optional: keep image cards at a steady height to avoid layout shift --- */
+/* Use on the container holding the image (or add a utility class on one card) */
+.cf-photo {
+    /* Uncomment one as needed, or set inline via style={{ aspectRatio: "16 / 9" }} */
+    /* aspect-ratio: 16 / 9; */
+    /* aspect-ratio: 4 / 5;  */
+    background-color: #f3f4f6;
+}
+
+/* --- Focus styles for a11y --- */
+.rd-btn:focus,
+.cf-input:focus,
+.cf-textarea:focus {
+    outline: 3px solid rgba(37, 99, 235, 0.25);
+    outline-offset: 2px;
+}
+
+/* --- Disabled state for buttons (e.g., Download before fused) --- */
+.rd-btn[disabled],
+.rd-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.cf-label {
+    font-weight: 600;
+    font-size: larger;
+
+    /* margin-bottom:6px; */
+}
+
+/* --- Tighter mobile layout at very small widths --- */
+@media (max-width: 480px) {
+    .cf-actions {
+        gap: 10px;
+        justify-content: center;
+    }
+
+    .rd-header {
+        padding: 12px 16px;
+    }
+}
+
+/* --- Optional: sticky header so the navbar stays visible --- */
+.rd-header {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+}
+
+/* --- Slightly larger click targets --- */
+.rd-btn {
+    padding: 12px 16px;
+}
+
+.rd-signin {
+    padding: 8px 16px;
+}
+
+/* --- Inputs: consistent placeholder + focus ring contrast --- */
+.cf-input::placeholder,
+.cf-textarea::placeholder {
+    color: #9ca3af;
+}
+
+.cf-input:focus,
+.cf-textarea:focus {
+    border-color: #93c5fd;
+    /* light blue ring */
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, .15);
+}
+
+/* Make read-only narration visually distinct */
+.cf-textarea-readonly[readOnly] {
+    background: #f8fafc;
+    color: #334155;
+    cursor: default;
+    font-family: cursive;
+    font-size: medium;
+}
+
+/* Ensure caption/narration text wraps nicely in previews if you show any */
+.cf-preview {
+    white-space: pre-wrap;
+    word-break: break-word;
+}
