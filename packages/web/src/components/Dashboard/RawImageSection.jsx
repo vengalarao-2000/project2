@@ -9,7 +9,7 @@ export default function RawImageSection({
     const allSelected = selectedIds.size === photos.length && photos.length > 0;
 
     return (
-        <section className="bg-white rounded shadow p-4">
+        <div className="mt-3">
             <div className="d-flex flex-wrap align-items-center justify-content-between mb-4">
                 {/* Only show Select All if there are photos */}
                 {photos.length > 0 && (
@@ -99,6 +99,6 @@ export default function RawImageSection({
                     </p>
                 </div>
             )}
-        </section>
+        </div>
     );
 }
